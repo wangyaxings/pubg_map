@@ -27,698 +27,130 @@
         background: #0a2236;
         position: relative;
       }
-
-      /* 瓦片加载状态指示器 */
-      .tile-loading-indicator {
-        position: absolute;
-        top: 10px;
-        right: 10px;
-        background: rgba(0, 0, 0, 0.7);
-        color: white;
-        padding: 8px 12px;
-        border-radius: 4px;
-        font-size: 12px;
-        z-index: 1000;
-        display: none;
-      }
-
-      .tile-loading-indicator.loading {
-        display: block;
-      }
-
-      /* Draggable marker styles - 优化支持瓦片缩放 */
-      .hex-dot {
-        box-sizing: border-box;
-        width: 16px !important;
-        height: 16px !important;
-        border-radius: 50%;
-        background: #ffffff;
-        border: 2px solid #2c3e50;
-        box-shadow: 0 0 10px rgba(0, 0, 0, 0.8);
-        cursor: pointer;
-        transition: box-shadow 0.2s ease, background 0.2s ease,
-          border-color 0.2s ease;
-        position: relative;
-        transform: translate(-50%, -50%);
-        margin: 0 !important;
-        /* 优化缩放性能 */
-        transform-origin: center;
-        will-change: transform;
-        /* 确保在不同缩放级别下保持清晰 */
-        image-rendering: -webkit-optimize-contrast;
-        image-rendering: crisp-edges;
-      }
-      .hex-dot::after {
-        content: "";
-        position: absolute;
-        top: 2px;
-        left: 2px;
-        right: 2px;
-        bottom: 2px;
-        border-radius: 50%;
-        background: radial-gradient(circle at 30% 30%, #fff, #e0e0e0);
-      }
-      .hex-dot:hover {
-        box-shadow: 0 0 15px rgba(52, 152, 219, 0.8);
-        background: #3498db;
-        transform: translate(-50%, -50%) scale(1.1);
-      }
-      .hex-dot.dragging {
-        box-shadow: 0 0 20px rgba(241, 196, 15, 0.9);
-        background: #f1c40f;
-        z-index: 1000;
-        cursor: move !important;
-        transform: translate(-50%, -50%) scale(1.2);
-      }
-      .hex-dot.has-image::before {
-        content: "";
-        position: absolute;
-        top: -3px;
-        right: -3px;
-        width: 8px;
-        height: 8px;
-        background: #e74c3c;
-        border-radius: 50%;
-        border: 1px solid #fff;
-        z-index: 10;
-      }
-
-      /* 自定义标记样式（参考index.js） */
-      .custom-marker {
-        box-sizing: border-box;
-        width: 20px !important;
-        height: 20px !important;
-        border-radius: 50%;
-        background: #e74c3c;
-        border: 3px solid #c0392b;
-        box-shadow: 0 0 12px rgba(231, 76, 60, 0.6);
-        cursor: pointer;
-        transition: all 0.2s ease;
-        position: relative;
-        transform: translate(-50%, -50%);
-        margin: 0 !important;
-        transform-origin: center;
-        will-change: transform;
-      }
-      .custom-marker::after {
-        content: "+";
-        position: absolute;
-        top: 50%;
-        left: 50%;
-        transform: translate(-50%, -50%);
-        color: white;
-        font-weight: bold;
-        font-size: 12px;
-        line-height: 1;
-      }
-      .custom-marker:hover {
-        box-shadow: 0 0 18px rgba(231, 76, 60, 0.8);
-        transform: translate(-50%, -50%) scale(1.1);
-      }
-
-      /* Custom Leaflet Popup Styles */
-      .leaflet-popup-content-wrapper {
-        background: linear-gradient(145deg, #1a252f, #2c3e50) !important;
-        border: 2px solid rgba(52, 152, 219, 0.4) !important;
-        border-radius: 10px !important;
-        box-shadow: 0 8px 25px rgba(0, 0, 0, 0.6) !important;
-        min-width: 320px !important;
-        max-width: 450px !important;
-      }
-
-      .leaflet-popup-content {
-        margin: 0 !important;
-        line-height: 1.4 !important;
-        color: #ecf0f1 !important;
-        font-size: 13px !important;
-      }
-
-      .leaflet-popup-tip {
-        background: linear-gradient(135deg, #2c3e50, #1a252f) !important;
-        border: 1px solid rgba(52, 152, 219, 0.4) !important;
-        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3) !important;
-      }
-
-      .leaflet-popup-close-button {
-        color: #e74c3c !important;
-        font-size: 16px !important;
-        font-weight: bold !important;
-        padding: 4px 8px !important;
-        border-radius: 4px !important;
-        background: rgba(231, 76, 60, 0.1) !important;
-        border: 1px solid rgba(231, 76, 60, 0.3) !important;
-        top: 5px !important;
-        right: 5px !important;
-      }
-
-      .leaflet-popup-close-button:hover {
-        background: rgba(231, 76, 60, 0.2) !important;
-        color: #fff !important;
-      }
-
-      /* Popup content styles */
-      .popup-header {
-        padding: 15px 20px 10px 20px;
-        border-bottom: 1px solid rgba(52, 152, 219, 0.2);
-        background: linear-gradient(135deg, #34495e, #2c3e50);
-        border-radius: 8px 8px 0 0;
-        margin: -1px -1px 0 -1px;
-      }
-
-      .popup-title {
-        display: flex;
-        align-items: center;
-        font-size: 16px;
-        font-weight: 600;
-        color: #3498db;
-        margin-bottom: 5px;
-      }
-
-      .popup-subtitle {
-        font-size: 12px;
-        color: #95a5a6;
-      }
-
-      .popup-body {
-        padding: 15px 20px;
-        max-height: 400px;
-        overflow-y: auto;
-      }
-
-      .cover-section {
-        margin-bottom: 15px;
-        position: relative;
-        border-radius: 6px;
-        overflow: hidden;
-        background: rgba(52, 152, 219, 0.1);
-        border: 1px solid rgba(52, 152, 219, 0.2);
-      }
-
-      .cover-image {
-        width: 100%;
-        height: 120px;
-        object-fit: cover;
-        display: block;
-      }
-
-      .cover-placeholder {
-        height: 120px;
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        justify-content: center;
-        color: rgba(236, 240, 241, 0.6);
-        font-size: 14px;
-        gap: 8px;
-      }
-
-      .upload-btn {
-        position: absolute;
-        top: 8px;
-        right: 8px;
-        background: rgba(52, 152, 219, 0.8);
-        border: none;
-        color: #fff;
-        padding: 6px 10px;
-        border-radius: 4px;
-        cursor: pointer;
-        font-size: 11px;
-        transition: all 0.2s ease;
-      }
-
-      .upload-btn:hover {
-        background: #3498db;
-        transform: scale(1.05);
-      }
-
-      .info-grid {
-        display: grid;
-        grid-template-columns: 1fr 1fr;
-        gap: 10px;
-        margin-top: 10px;
-      }
-
-      .info-item {
-        background: rgba(52, 152, 219, 0.05);
-        border: 1px solid rgba(52, 152, 219, 0.15);
-        border-radius: 4px;
-        padding: 8px 10px;
-      }
-
-      .info-label {
-        font-size: 11px;
-        color: #95a5a6;
-        margin-bottom: 2px;
-      }
-
-      .info-value {
-        font-size: 12px;
-        color: #ecf0f1;
-        font-weight: 500;
-      }
-
-      .status-badge {
-        display: inline-flex;
-        align-items: center;
-        padding: 2px 8px;
-        border-radius: 10px;
-        font-size: 10px;
-        font-weight: 600;
-      }
-
-      .status-active {
-        background: rgba(46, 204, 113, 0.2);
-        color: #2ecc71;
-        border: 1px solid rgba(46, 204, 113, 0.4);
-      }
-
-      .status-inactive {
-        background: rgba(149, 165, 166, 0.2);
-        color: #95a5a6;
-        border: 1px solid rgba(149, 165, 166, 0.4);
-      }
-
-      .content-section {
-        margin-top: 15px;
-        padding-top: 15px;
-        border-top: 1px solid rgba(52, 152, 219, 0.2);
-      }
-
-      .content-title {
-        font-size: 14px;
-        font-weight: 600;
-        color: #f39c12;
-        margin-bottom: 8px;
-      }
-
-      .content-text {
-        font-size: 12px;
-        color: #ecf0f1;
-        line-height: 1.5;
-        margin-bottom: 10px;
-        background: rgba(52, 152, 219, 0.05);
-        padding: 8px;
-        border-radius: 4px;
-        border-left: 3px solid #3498db;
-      }
-
-      .lines-section {
-        margin-top: 15px;
-      }
-
-      .line-item {
-        background: rgba(52, 152, 219, 0.05);
-        border: 1px solid rgba(52, 152, 219, 0.15);
-        border-radius: 4px;
-        padding: 10px;
-        margin-bottom: 8px;
-      }
-
-      .line-header {
-        display: flex;
-        align-items: center;
-        margin-bottom: 8px;
-      }
-
-      .line-position {
-        background: #3498db;
-        color: #fff;
-        padding: 2px 6px;
-        border-radius: 3px;
-        font-size: 10px;
-        font-weight: 600;
-        margin-right: 8px;
-      }
-
-      .line-title {
-        font-size: 12px;
-        font-weight: 600;
-        color: #f39c12;
-      }
-
-      /* Tooltip styles */
-      .hex-tip {
-        background: rgba(44, 62, 80, 0.95);
-        color: #ecf0f1;
-        border: 1px solid rgba(52, 152, 219, 0.8);
-        border-radius: 6px;
-        padding: 4px 8px;
-        font: 11px/1.3 "Segoe UI", system-ui, sans-serif;
-        text-shadow: 0 1px 2px rgba(0, 0, 0, 0.8);
-        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
-        white-space: nowrap;
-        pointer-events: none;
-      }
-      .hex-tip .sym {
-        font-size: 14px;
-        margin-right: 4px;
-        color: #f39c12;
-      }
-      .hex-tip .name {
-        font-weight: 600;
-        margin-right: 6px;
-        color: #3498db;
-      }
-      .hex-tip .num {
-        opacity: 0.9;
-        color: #2ecc71;
-      }
-
-      /* Upload area */
-      .upload-area {
-        position: absolute;
-        top: 15px;
-        left: 50%;
-        transform: translateX(-50%);
-        z-index: 1000;
-        background: linear-gradient(145deg, #2c3e50, #34495e);
-        border: 2px dashed rgba(52, 152, 219, 0.6);
-        border-radius: 10px;
-        padding: 15px 25px;
-        color: #ecf0f1;
-        cursor: pointer;
-        transition: all 0.3s ease;
-        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
-      }
-      .upload-area:hover {
-        border-color: #f39c12;
-        background: linear-gradient(145deg, #34495e, #2c3e50);
-        transform: translateX(-50%) translateY(-2px);
-      }
-      .upload-area.dragover {
-        border-color: #2ecc71;
-        background: linear-gradient(145deg, #27ae60, #2ecc71);
-        color: #fff;
-      }
-      .upload-area input[type="file"] {
-        display: none;
-      }
-      .upload-text {
-        display: flex;
-        align-items: center;
-        font-size: 14px;
-      }
-
-      /* Control panel */
       .control-panel {
-        position: absolute;
-        right: 15px;
-        top: 15px;
-        z-index: 1000;
-        background: linear-gradient(145deg, #2c3e50, #34495e);
-        padding: 15px;
-        border-radius: 10px;
-        border: 1px solid rgba(52, 152, 219, 0.3);
-        min-width: 220px;
-        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+        position: fixed;
+        top: 16px;
+        left: 16px;
+        display: grid;
+        gap: 8px;
+        background: rgba(0,0,0,0.35);
+        padding: 8px;
+        border-radius: 6px;
+        z-index: 2000;
       }
       .control-panel button {
-        background: linear-gradient(145deg, #34495e, #2c3e50);
-        border: 1px solid rgba(52, 152, 219, 0.3);
-        color: #ecf0f1;
-        padding: 10px 15px;
-        margin: 4px 0;
-        border-radius: 6px;
-        cursor: pointer;
-        font-size: 13px;
-        width: 100%;
-        transition: all 0.2s ease;
         display: flex;
         align-items: center;
-        justify-content: flex-start;
-      }
-      .control-panel button:hover {
-        background: linear-gradient(145deg, #3498db, #2980b9);
-        transform: translateY(-1px);
-        box-shadow: 0 2px 8px rgba(52, 152, 219, 0.3);
-      }
-      .control-panel button i {
-        margin-right: 8px;
-        width: 16px;
-      }
-
-      /* Status display */
-      .status-bar {
-        position: absolute;
-        bottom: 15px;
-        left: 15px;
-        z-index: 1000;
-        background: linear-gradient(145deg, #2c3e50, #34495e);
-        color: #ecf0f1;
-        padding: 10px 20px;
-        border-radius: 8px;
-        border: 1px solid rgba(52, 152, 219, 0.3);
-        font-size: 13px;
-        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
-        display: flex;
-        align-items: center;
-        gap: 15px;
-      }
-      .status-item {
-        display: flex;
-        align-items: center;
-        gap: 5px;
-      }
-      .status-count {
-        color: #2ecc71;
-        font-weight: 600;
-      }
-
-      /* Loading indicator */
-      .loading {
-        position: absolute;
-        top: 50%;
-        left: 50%;
-        transform: translate(-50%, -50%);
-        z-index: 2000;
-        background: linear-gradient(145deg, #2c3e50, #34495e);
-        color: #ecf0f1;
-        padding: 25px 35px;
-        border-radius: 10px;
-        font-size: 16px;
-        border: 2px solid rgba(52, 152, 219, 0.3);
-        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
-        text-align: center;
-      }
-      .loading.hidden {
-        display: none;
-      }
-
-      /* Hidden file input */
-      .hidden-file-input {
-        display: none;
-      }
-
-      /* 卦象搜索对话框样式 */
-      .hexagram-search-dialog {
-        position: fixed;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
-        background: rgba(0, 0, 0, 0.7);
-        z-index: 3000;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-      }
-
-      .search-dialog-content {
-        background: linear-gradient(145deg, #2c3e50, #34495e);
-        border: 2px solid rgba(52, 152, 219, 0.4);
-        border-radius: 10px;
-        padding: 20px;
-        width: 90%;
-        max-width: 500px;
-        max-height: 80vh;
-        overflow-y: auto;
-        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
-      }
-
-      .search-dialog-header {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        margin-bottom: 20px;
-        padding-bottom: 10px;
-        border-bottom: 1px solid rgba(52, 152, 219, 0.3);
-      }
-
-      .search-dialog-header h3 {
-        color: #ecf0f1;
-        margin: 0;
-        font-size: 18px;
-      }
-
-      .close-btn {
-        background: rgba(231, 76, 60, 0.8);
-        border: none;
-        color: white;
-        width: 30px;
-        height: 30px;
-        border-radius: 50%;
-        cursor: pointer;
-        font-size: 18px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        transition: all 0.2s ease;
-      }
-
-      .close-btn:hover {
-        background: #e74c3c;
-        transform: scale(1.1);
-      }
-
-      .search-input-container {
-        display: flex;
-        gap: 10px;
-        margin-bottom: 20px;
-      }
-
-      .search-input {
-        flex: 1;
-        padding: 12px 15px;
-        border: 1px solid rgba(52, 152, 219, 0.3);
-        border-radius: 6px;
-        background: rgba(52, 152, 219, 0.1);
-        color: #ecf0f1;
-        font-size: 14px;
-      }
-
-      .search-input::placeholder {
-        color: rgba(236, 240, 241, 0.6);
-      }
-
-      .search-input:focus {
-        outline: none;
-        border-color: #3498db;
-        box-shadow: 0 0 10px rgba(52, 152, 219, 0.3);
-      }
-
-      .search-btn {
-        padding: 12px 20px;
-        background: linear-gradient(145deg, #3498db, #2980b9);
-        border: none;
-        color: white;
-        border-radius: 6px;
-        cursor: pointer;
-        font-size: 14px;
-        transition: all 0.2s ease;
-      }
-
-      .search-btn:hover {
-        background: linear-gradient(145deg, #2980b9, #3498db);
-        transform: translateY(-1px);
-      }
-
-      .search-results {
-        max-height: 400px;
-        overflow-y: auto;
-      }
-
-      .search-result-item {
-        background: rgba(52, 152, 219, 0.05);
-        border: 1px solid rgba(52, 152, 219, 0.2);
-        border-radius: 6px;
-        padding: 15px;
-        margin-bottom: 8px;
-        cursor: pointer;
-        transition: all 0.2s ease;
-      }
-
-      .search-result-item:hover {
-        background: rgba(52, 152, 219, 0.1);
-        border-color: #3498db;
-        transform: translateY(-1px);
-      }
-
-      .hexagram-info {
-        display: flex;
-        align-items: center;
-        gap: 15px;
-      }
-
-      .hexagram-symbol {
-        font-size: 24px;
-        color: #f39c12;
-        font-weight: bold;
-      }
-
-      .hexagram-name {
-        font-size: 16px;
-        color: #ecf0f1;
-        font-weight: 500;
-        flex: 1;
-      }
-
-      .hexagram-number {
-        background: rgba(52, 152, 219, 0.3);
-        color: #ecf0f1;
-        padding: 4px 8px;
+        gap: 6px;
+        padding: 6px 10px;
         border-radius: 4px;
-        font-size: 12px;
-        font-weight: bold;
+        border: 1px solid rgba(255,255,255,0.2);
+        background: rgba(255,255,255,0.9);
+        cursor: pointer;
       }
-
-      .no-results {
-        text-align: center;
-        color: rgba(236, 240, 241, 0.6);
-        padding: 20px;
-        font-style: italic;
-      }
-
-      .error {
-        text-align: center;
-        color: #e74c3c;
-        padding: 20px;
-      }
-
-      /* 通知样式 */
-      .notification {
+      .status-bar {
         position: fixed;
-        top: 20px;
-        right: 20px;
-        padding: 12px 20px;
+        bottom: 12px;
+        left: 50%;
+        transform: translateX(-50%);
+        display: flex;
+        gap: 16px;
+        background: rgba(0,0,0,0.35);
+        padding: 6px 10px;
         border-radius: 6px;
-        color: white;
-        font-size: 14px;
-        z-index: 4000;
-        animation: slideIn 0.3s ease;
+        color: #ecf0f1;
+        z-index: 2000;
+      }
+      .status-item { display: flex; align-items: center; gap: 6px; }
+      .hidden-file-input { display: none; }
+
+      /* Marker (CircleMarker) state styles */
+      .leaflet-interactive.has-image {
+        stroke: #ffffff;
+        stroke-width: 1.5;
+        filter: drop-shadow(0 0 4px rgba(231, 76, 60, 0.6));
+      }
+      .leaflet-interactive.dragging {
+        cursor: move !important;
+        filter: drop-shadow(0 0 6px rgba(241, 196, 15, 0.9));
       }
 
-      .notification-success {
-        background: linear-gradient(145deg, #27ae60, #2ecc71);
+      /* Tooltip styling */
+      .leaflet-tooltip.hex-tip {
+        background: rgba(10, 34, 54, 0.92);
+        color: #ecf0f1;
+        border: 1px solid rgba(255, 255, 255, 0.15);
+        border-radius: 4px;
+        padding: 2px 6px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.25);
       }
+      .leaflet-tooltip.hex-tip .sym { font-size: 14px; margin-right: 6px; }
+      .leaflet-tooltip.hex-tip .name { margin-right: 6px; }
+      .leaflet-tooltip.hex-tip .num { color: rgba(236,240,241,0.7); font-size: 11px; }
 
-      .notification-error {
-        background: linear-gradient(145deg, #e74c3c, #c0392b);
+      /* Popup styling */
+      .leaflet-popup.custom-popup .leaflet-popup-content-wrapper {
+        background: #0f2a42;
+        color: #ecf0f1;
+        border: 1px solid rgba(255,255,255,0.12);
+        border-radius: 8px;
       }
-
-      .notification-info {
-        background: linear-gradient(145deg, #3498db, #2980b9);
+      .leaflet-popup.custom-popup .leaflet-popup-tip {
+        background: #0f2a42;
+        border: 1px solid rgba(255,255,255,0.12);
       }
-
-      @keyframes slideIn {
-        from {
-          transform: translateX(100%);
-          opacity: 0;
-        }
-        to {
-          transform: translateX(0);
-          opacity: 1;
-        }
+      .custom-popup .popup-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding-bottom: 6px;
+        margin-bottom: 8px;
+        border-bottom: 1px solid rgba(255,255,255,0.12);
       }
+      .custom-popup .popup-title { font-weight: 600; font-size: 16px; }
+      .custom-popup .popup-subtitle { font-size: 12px; color: rgba(236,240,241,0.7); }
+      .custom-popup .popup-body { font-size: 13px; }
+      .custom-popup .cover-section { position: relative; margin-bottom: 10px; }
+      .custom-popup .cover-image {
+        width: 100%;
+        max-height: 180px;
+        object-fit: cover;
+        border-radius: 6px;
+      }
+      .custom-popup .cover-placeholder {
+        height: 160px;
+        display: flex; align-items: center; justify-content: center;
+        flex-direction: column; gap: 6px;
+        color: rgba(236,240,241,0.7);
+        background: rgba(255,255,255,0.06);
+        border: 1px dashed rgba(255,255,255,0.2);
+        border-radius: 6px;
+      }
+      .custom-popup .upload-btn {
+        position: absolute; right: 8px; bottom: 8px;
+        padding: 6px 10px; border-radius: 4px; border: none;
+        background: rgba(52,152,219,0.95); color: #fff; cursor: pointer;
+      }
+      .custom-popup .info-grid {
+        display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 10px;
+      }
+      .custom-popup .info-item { background: rgba(255,255,255,0.06); padding: 6px 8px; border-radius: 4px; }
+      .custom-popup .info-label { font-size: 11px; color: rgba(236,240,241,0.65); }
+      .custom-popup .info-value { font-size: 13px; font-weight: 600; }
+      .status-badge { display: inline-flex; align-items: center; gap: 4px; padding: 2px 6px; border-radius: 4px; font-size: 11px; }
+      .status-active { background: rgba(46,204,113,0.2); color: #2ecc71; }
+      .status-inactive { background: rgba(231,76,60,0.2); color: #e74c3c; }
+      .content-section { margin: 10px 0; }
+      .content-title { font-weight: 600; color: #ffd166; margin-bottom: 4px; }
+      .content-text { line-height: 1.5; }
+      .lines-section .line-item { background: rgba(255,255,255,0.04); padding: 6px 8px; border-radius: 4px; margin: 8px 0; border-left: 2px solid rgba(255,255,255,0.15); }
+      .line-header { display: flex; align-items: center; gap: 8px; margin-bottom: 4px; }
+      .line-position { font-weight: 600; color: #f4d35e; }
+      .line-title { font-size: 12px; color: rgba(236,240,241,0.7); }
     </style>
   </head>
   <body>
-    <div id="map">
-      <div class="tile-loading-indicator" id="tileLoadingIndicator">
-        <i class="fas fa-spinner fa-spin"></i> 加载瓦片...
-      </div>
-    </div>
-
-
+    <div id="map"></div>
 
     <div class="control-panel">
       <button onclick="toggleAllLabels()">
@@ -741,7 +173,6 @@
         <i class="fas fa-undo-alt"></i>
         重置坐标
       </button>
-
       <button onclick="toggleDragMode()">
         <i class="fas fa-arrows-alt" id="dragIcon"></i>
         <span id="dragModeText">启用拖拽</span>
@@ -751,13 +182,11 @@
     <div class="status-bar">
       <div class="status-item">
         <i class="fas fa-map-marker-alt"></i>
-        <span
-          >标记点: <span class="status-count" id="hexagramCount">0</span></span
-        >
+        <span>标记�?span class="status-count" id="hexagramCount">0</span></span>
       </div>
       <div class="status-item">
         <i class="fas fa-images"></i>
-        <span>已配图: <span class="status-count" id="imageCount">0</span></span>
+        <span>已配�?span class="status-count" id="imageCount">0</span></span>
       </div>
       <div class="status-item">
         <i class="fas fa-edit"></i>
@@ -765,16 +194,11 @@
       </div>
     </div>
 
-
-
-    <input
-      type="file"
-      id="pointImageUpload"
-      class="hidden-file-input"
-      accept="image/*"
-    />
+    <input type="file" id="pointImageUpload" class="hidden-file-input" accept="image/*" />
 
     <script type="module" src="src/main.js"></script>
     <script type="module" src="src/search-functions.js"></script>
   </body>
-</html>
+  </html>
+
+

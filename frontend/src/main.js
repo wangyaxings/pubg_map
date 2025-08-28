@@ -14,7 +14,6 @@ const MIN_ZOOM = 2;                     // Tiles start from zoom level 2
 
 // DOM elements
 const pointImageUpload = document.getElementById("pointImageUpload");
-const tileLoadingIndicator = document.getElementById("tileLoadingIndicator");
 
 // Global state
 let map, overlay, markers = [];
@@ -237,15 +236,6 @@ function createTileLayer() {
     errorTileUrl: 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7'
   });
 
-  // 添加瓦片加载事件监听
-  tileLayerInstance.on('loading', function() {
-    tileLoadingIndicator.classList.add('loading');
-  });
-
-  tileLayerInstance.on('load', function() {
-    tileLoadingIndicator.classList.remove('loading');
-  });
-
   tileLayerInstance.addTo(map);
   return tileLayerInstance;
 }
@@ -341,15 +331,27 @@ async function initMap() {
 
       // 根据缩放级别调整标记显示
       markers.forEach(marker => {
-        const element = marker.getElement();
-        if (element) {
-          // 在低缩放级别时减小标记大小
+        // 对于 CircleMarker，使用 setRadius 调整大小，避免对 SVG path 应用 CSS transform 导致位置错乱或不可见
+        if (marker instanceof L.CircleMarker) {
+          const base = 5; // 初始半径
+          let r = base;
           if (currentZoom < 3) {
-            element.style.transform = 'translate(-50%, -50%) scale(0.8)';
+            r = base * 0.8;
           } else if (currentZoom > 6) {
-            element.style.transform = 'translate(-50%, -50%) scale(1.2)';
-          } else {
-            element.style.transform = 'translate(-50%, -50%) scale(1)';
+            r = base * 1.2;
+          }
+          marker.setRadius(r);
+        } else {
+          // 仅对使用 DivIcon 的 L.Marker 应用 transform
+          const element = marker.getElement();
+          if (element) {
+            if (currentZoom < 3) {
+              element.style.transform = 'translate(-50%, -50%) scale(0.8)';
+            } else if (currentZoom > 6) {
+              element.style.transform = 'translate(-50%, -50%) scale(1.2)';
+            } else {
+              element.style.transform = 'translate(-50%, -50%) scale(1)';
+            }
           }
         }
       });
@@ -753,11 +755,17 @@ function toggleDragMode() {
 
   markers.forEach((marker) => {
     if (dragMode) {
-      marker.dragging.enable();
-      marker.getElement().style.cursor = "move";
+      if (marker.dragging && typeof marker.dragging.enable === 'function') {
+        marker.dragging.enable();
+      }
+      const el = marker.getElement && marker.getElement();
+      if (el) el.style.cursor = "move";
     } else {
-      marker.dragging.disable();
-      marker.getElement().style.cursor = "pointer";
+      if (marker.dragging && typeof marker.dragging.disable === 'function') {
+        marker.dragging.disable();
+      }
+      const el = marker.getElement && marker.getElement();
+      if (el) el.style.cursor = "pointer";
     }
   });
 }

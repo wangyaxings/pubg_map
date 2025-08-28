@@ -83,17 +83,72 @@ function displaySearchResults(results) {
     return;
   }
 
-  const resultsHtml = results.map(hexagram => `
-    <div class="search-result-item" onclick="selectHexagram(${hexagram.number}, '${hexagram.name}', '${hexagram.symbol}')">
-      <div class="hexagram-info">
-        <span class="hexagram-symbol">${hexagram.symbol}</span>
-        <span class="hexagram-name">${hexagram.name}</span>
-        <span class="hexagram-number">#${hexagram.number}</span>
+  // Build count map from current markers on the map
+  let countMap = {};
+  try {
+    const markersData = (window.getMarkersData && window.getMarkersData()) || [];
+    markersData.forEach(m => {
+      const num = (m && (m.number || (m.hexagram && m.hexagram.number))) || null;
+      if (num != null) {
+        countMap[num] = (countMap[num] || 0) + 1;
+      }
+    });
+  } catch (e) {
+    console.warn('统计卦象出现次数失败:', e);
+  }
+
+  // Sort: by count ascending; 0-count first; ties by number ascending
+  const sorted = [...results].sort((a, b) => {
+    const ca = countMap[a.number] || 0;
+    const cb = countMap[b.number] || 0;
+    if (ca !== cb) return ca - cb; // ascending; 0s first
+    return (a.number || 0) - (b.number || 0);
+  });
+
+  const resultsHtml = sorted.map(hexagram => {
+    const count = countMap[hexagram.number] || 0;
+    const rightHtml = count > 0
+      ? `<button class="locate-btn" onclick="event.stopPropagation(); locateHexagram(${hexagram.number})" title="定位到已添加的位置">定位 x${count}</button>`
+      : `<span class="unused-badge" title="未添加">未添加</span>`;
+
+    return `
+      <div class="search-result-item" onclick="selectHexagram(${hexagram.number}, '${hexagram.name}', '${hexagram.symbol}')">
+        <div class="hexagram-info">
+          <span class="hexagram-symbol">${hexagram.symbol}</span>
+          <span class="hexagram-name">${hexagram.name}</span>
+          <span class="hexagram-number">#${hexagram.number}</span>
+        </div>
+        <div class="hexagram-actions">${rightHtml}</div>
       </div>
-    </div>
-  `).join('');
+    `;
+  }).join('');
 
   resultsContainer.innerHTML = resultsHtml;
+}
+
+// 快速定位到地图上已存在的卦象位置（如存在多个，自动框选）
+function locateHexagram(number) {
+  try {
+    const map = window.getMap();
+    const markersData = (window.getMarkersData && window.getMarkersData()) || [];
+    const matches = markersData.filter(m => (m.number || (m.hexagram && m.hexagram.number)) === number);
+    if (!matches.length) {
+      showNotification('该卦尚未添加到地图', 'info');
+      return;
+    }
+
+    const latlngs = matches.map(m => window.toLatLngFromNormalized(m.x, m.y));
+    if (latlngs.length === 1) {
+      const target = latlngs[0];
+      const targetZoom = Math.max(map.getZoom(), 5);
+      map.setView(target, targetZoom, { animate: true });
+    } else {
+      const bounds = L.latLngBounds(latlngs);
+      map.fitBounds(bounds.pad(0.2));
+    }
+  } catch (e) {
+    console.error('定位失败:', e);
+  }
 }
 
 // 选择卦象
@@ -287,3 +342,4 @@ window.selectHexagram = selectHexagram;
 window.addMarkerToMap = addMarkerToMap;
 window.showNotification = showNotification;
 window.debounce = debounce;
+window.locateHexagram = locateHexagram;

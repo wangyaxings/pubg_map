@@ -15,138 +15,527 @@
       href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
     />
     <style>
-      html,
-      body {
+      /* CSS Variables for consistent theming */
+      :root {
+        --primary-color: #3498db;
+        --secondary-color: #2ecc71;
+        --accent-color: #f39c12;
+        --danger-color: #e74c3c;
+        --warning-color: #f1c40f;
+        --dark-bg: #0a2236;
+        --dark-surface: #0f2a42;
+        --text-primary: #ecf0f1;
+        --text-secondary: rgba(236, 240, 241, 0.7);
+        --text-muted: rgba(236, 240, 241, 0.5);
+        --border-color: rgba(255, 255, 255, 0.12);
+        --border-light: rgba(255, 255, 255, 0.2);
+        --shadow-light: 0 2px 8px rgba(0, 0, 0, 0.15);
+        --shadow-medium: 0 4px 16px rgba(0, 0, 0, 0.25);
+        --shadow-heavy: 0 8px 32px rgba(0, 0, 0, 0.35);
+        --border-radius: 8px;
+        --border-radius-sm: 4px;
+        --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      }
+
+      /* Base styles */
+      html, body {
         height: 100%;
         margin: 0;
-        font-family: "Segoe UI", "Microsoft YaHei", system-ui, sans-serif;
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, 'Noto Sans', sans-serif;
+        background: var(--dark-bg);
+        color: var(--text-primary);
+        overflow: hidden;
       }
+
       #map {
         height: 100%;
         width: 100%;
-        background: #0a2236;
+        background: var(--dark-bg);
         position: relative;
       }
+
+      /* Control Panel - Enhanced with better styling */
       .control-panel {
         position: fixed;
-        top: 16px;
-        left: 16px;
+        top: 20px;
+        left: 20px;
         display: grid;
-        gap: 8px;
-        background: rgba(0,0,0,0.35);
-        padding: 8px;
-        border-radius: 6px;
+        gap: 10px;
+        background: rgba(15, 42, 66, 0.95);
+        backdrop-filter: blur(10px);
+        padding: 16px;
+        border-radius: var(--border-radius);
+        border: 1px solid var(--border-color);
+        box-shadow: var(--shadow-heavy);
         z-index: 2000;
+        min-width: 200px;
       }
+
       .control-panel button {
         display: flex;
         align-items: center;
-        gap: 6px;
-        padding: 6px 10px;
-        border-radius: 4px;
-        border: 1px solid rgba(255,255,255,0.2);
-        background: rgba(255,255,255,0.9);
+        gap: 8px;
+        padding: 10px 14px;
+        border-radius: var(--border-radius-sm);
+        border: 1px solid var(--border-light);
+        background: rgba(255, 255, 255, 0.1);
+        color: var(--text-primary);
         cursor: pointer;
+        font-size: 14px;
+        font-weight: 500;
+        transition: var(--transition);
+        backdrop-filter: blur(5px);
       }
+
+      .control-panel button:hover {
+        background: rgba(255, 255, 255, 0.2);
+        border-color: var(--primary-color);
+        transform: translateY(-1px);
+        box-shadow: var(--shadow-light);
+      }
+
+      .control-panel button:active {
+        transform: translateY(0);
+      }
+
+      .control-panel button i {
+        font-size: 16px;
+        width: 16px;
+        text-align: center;
+      }
+
+      /* Status Bar - Enhanced with better styling */
       .status-bar {
         position: fixed;
-        bottom: 12px;
+        bottom: 20px;
         left: 50%;
         transform: translateX(-50%);
         display: flex;
-        gap: 16px;
-        background: rgba(0,0,0,0.35);
-        padding: 6px 10px;
-        border-radius: 6px;
-        color: #ecf0f1;
+        gap: 20px;
+        background: rgba(15, 42, 66, 0.95);
+        backdrop-filter: blur(10px);
+        padding: 12px 20px;
+        border-radius: var(--border-radius);
+        color: var(--text-primary);
         z-index: 2000;
+        border: 1px solid var(--border-color);
+        box-shadow: var(--shadow-heavy);
       }
-      .status-item { display: flex; align-items: center; gap: 6px; }
-      .hidden-file-input { display: none; }
 
-      /* Marker (CircleMarker) state styles */
+      .status-item {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 14px;
+        font-weight: 500;
+      }
+
+      .status-item i {
+        font-size: 16px;
+        width: 16px;
+        text-align: center;
+        color: var(--primary-color);
+      }
+
+      .status-count {
+        font-weight: 600;
+        color: var(--secondary-color);
+        margin-left: 4px;
+      }
+
+      .hidden-file-input {
+        display: none;
+      }
+
+      /* Enhanced Marker Styles */
       .leaflet-interactive.has-image {
         stroke: #ffffff;
-        stroke-width: 1.5;
-        filter: drop-shadow(0 0 4px rgba(231, 76, 60, 0.6));
+        stroke-width: 2px;
+        filter: drop-shadow(0 0 8px rgba(231, 76, 60, 0.8));
+        animation: pulse 2s infinite;
       }
+
       .leaflet-interactive.dragging {
         cursor: move !important;
-        filter: drop-shadow(0 0 6px rgba(241, 196, 15, 0.9));
+        filter: drop-shadow(0 0 12px rgba(241, 196, 15, 1));
+        transform: scale(1.2);
+        transition: transform 0.2s ease;
       }
 
-      /* Tooltip styling */
+      @keyframes pulse {
+        0% { filter: drop-shadow(0 0 8px rgba(231, 76, 60, 0.8)); }
+        50% { filter: drop-shadow(0 0 12px rgba(231, 76, 60, 1)); }
+        100% { filter: drop-shadow(0 0 8px rgba(231, 76, 60, 0.8)); }
+      }
+
+      /* Enhanced Tooltip Styling */
       .leaflet-tooltip.hex-tip {
-        background: rgba(10, 34, 54, 0.92);
-        color: #ecf0f1;
-        border: 1px solid rgba(255, 255, 255, 0.15);
-        border-radius: 4px;
-        padding: 2px 6px;
-        box-shadow: 0 2px 8px rgba(0,0,0,0.25);
+        background: rgba(15, 42, 66, 0.95);
+        backdrop-filter: blur(10px);
+        color: var(--text-primary);
+        border: 1px solid var(--border-color);
+        border-radius: var(--border-radius-sm);
+        padding: 6px 10px;
+        box-shadow: var(--shadow-medium);
+        font-weight: 500;
+        font-size: 13px;
       }
-      .leaflet-tooltip.hex-tip .sym { font-size: 14px; margin-right: 6px; }
-      .leaflet-tooltip.hex-tip .name { margin-right: 6px; }
-      .leaflet-tooltip.hex-tip .num { color: rgba(236,240,241,0.7); font-size: 11px; }
 
-      /* Popup styling */
+      .leaflet-tooltip.hex-tip .sym {
+        font-size: 16px;
+        margin-right: 8px;
+        color: var(--accent-color);
+      }
+
+      .leaflet-tooltip.hex-tip .name {
+        margin-right: 8px;
+        font-weight: 600;
+      }
+
+      .leaflet-tooltip.hex-tip .num {
+        color: var(--text-secondary);
+        font-size: 12px;
+        background: rgba(255, 255, 255, 0.1);
+        padding: 2px 6px;
+        border-radius: 10px;
+      }
+
+      /* Enhanced Popup Styling */
       .leaflet-popup.custom-popup .leaflet-popup-content-wrapper {
-        background: #0f2a42;
-        color: #ecf0f1;
-        border: 1px solid rgba(255,255,255,0.12);
-        border-radius: 8px;
+        background: var(--dark-surface);
+        backdrop-filter: blur(15px);
+        color: var(--text-primary);
+        border: 1px solid var(--border-color);
+        border-radius: var(--border-radius);
+        box-shadow: var(--shadow-heavy);
+        padding: 0;
+        overflow: hidden;
       }
+
       .leaflet-popup.custom-popup .leaflet-popup-tip {
-        background: #0f2a42;
-        border: 1px solid rgba(255,255,255,0.12);
+        background: var(--dark-surface);
+        border: 1px solid var(--border-color);
       }
+
+      .leaflet-popup.custom-popup .leaflet-popup-content {
+        margin: 0;
+        padding: 0;
+        min-width: 320px;
+        max-width: 450px;
+      }
+
       .custom-popup .popup-header {
         display: flex;
         align-items: center;
         justify-content: space-between;
-        padding-bottom: 6px;
-        margin-bottom: 8px;
-        border-bottom: 1px solid rgba(255,255,255,0.12);
+        padding: 16px 20px;
+        margin-bottom: 0;
+        border-bottom: 1px solid var(--border-color);
+        background: rgba(255, 255, 255, 0.05);
       }
-      .custom-popup .popup-title { font-weight: 600; font-size: 16px; }
-      .custom-popup .popup-subtitle { font-size: 12px; color: rgba(236,240,241,0.7); }
-      .custom-popup .popup-body { font-size: 13px; }
-      .custom-popup .cover-section { position: relative; margin-bottom: 10px; }
+
+      .custom-popup .popup-title {
+        font-weight: 700;
+        font-size: 18px;
+        color: var(--text-primary);
+      }
+
+      .custom-popup .popup-subtitle {
+        font-size: 13px;
+        color: var(--text-secondary);
+        margin-top: 4px;
+      }
+
+      .custom-popup .popup-body {
+        font-size: 14px;
+        padding: 20px;
+        line-height: 1.6;
+      }
+
+      .custom-popup .cover-section {
+        position: relative;
+        margin-bottom: 16px;
+        border-radius: var(--border-radius-sm);
+        overflow: hidden;
+      }
+
       .custom-popup .cover-image {
         width: 100%;
-        max-height: 180px;
+        max-height: 200px;
         object-fit: cover;
-        border-radius: 6px;
+        border-radius: var(--border-radius-sm);
+        box-shadow: var(--shadow-light);
       }
+
       .custom-popup .cover-placeholder {
-        height: 160px;
-        display: flex; align-items: center; justify-content: center;
-        flex-direction: column; gap: 6px;
-        color: rgba(236,240,241,0.7);
-        background: rgba(255,255,255,0.06);
-        border: 1px dashed rgba(255,255,255,0.2);
-        border-radius: 6px;
+        height: 180px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-direction: column;
+        gap: 8px;
+        color: var(--text-secondary);
+        background: rgba(255, 255, 255, 0.05);
+        border: 2px dashed var(--border-light);
+        border-radius: var(--border-radius-sm);
+        transition: var(--transition);
       }
+
+      .custom-popup .cover-placeholder:hover {
+        border-color: var(--primary-color);
+        background: rgba(52, 152, 219, 0.1);
+      }
+
       .custom-popup .upload-btn {
-        position: absolute; right: 8px; bottom: 8px;
-        padding: 6px 10px; border-radius: 4px; border: none;
-        background: rgba(52,152,219,0.95); color: #fff; cursor: pointer;
+        position: absolute;
+        right: 12px;
+        bottom: 12px;
+        padding: 8px 16px;
+        border-radius: var(--border-radius-sm);
+        border: none;
+        background: var(--primary-color);
+        color: white;
+        cursor: pointer;
+        font-weight: 600;
+        font-size: 13px;
+        transition: var(--transition);
+        box-shadow: var(--shadow-light);
       }
+
+      .custom-popup .upload-btn:hover {
+        background: #2980b9;
+        transform: translateY(-1px);
+        box-shadow: var(--shadow-medium);
+      }
+
       .custom-popup .info-grid {
-        display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 10px;
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 12px;
+        margin-bottom: 16px;
       }
-      .custom-popup .info-item { background: rgba(255,255,255,0.06); padding: 6px 8px; border-radius: 4px; }
-      .custom-popup .info-label { font-size: 11px; color: rgba(236,240,241,0.65); }
-      .custom-popup .info-value { font-size: 13px; font-weight: 600; }
-      .status-badge { display: inline-flex; align-items: center; gap: 4px; padding: 2px 6px; border-radius: 4px; font-size: 11px; }
-      .status-active { background: rgba(46,204,113,0.2); color: #2ecc71; }
-      .status-inactive { background: rgba(231,76,60,0.2); color: #e74c3c; }
-      .content-section { margin: 10px 0; }
-      .content-title { font-weight: 600; color: #ffd166; margin-bottom: 4px; }
-      .content-text { line-height: 1.5; }
-      .lines-section .line-item { background: rgba(255,255,255,0.04); padding: 6px 8px; border-radius: 4px; margin: 8px 0; border-left: 2px solid rgba(255,255,255,0.15); }
-      .line-header { display: flex; align-items: center; gap: 8px; margin-bottom: 4px; }
-      .line-position { font-weight: 600; color: #f4d35e; }
-      .line-title { font-size: 12px; color: rgba(236,240,241,0.7); }
+
+      .custom-popup .info-item {
+        background: rgba(255, 255, 255, 0.08);
+        padding: 10px 12px;
+        border-radius: var(--border-radius-sm);
+        border: 1px solid var(--border-color);
+        transition: var(--transition);
+      }
+
+      .custom-popup .info-item:hover {
+        background: rgba(255, 255, 255, 0.12);
+        border-color: var(--primary-color);
+      }
+
+      .custom-popup .info-label {
+        font-size: 12px;
+        color: var(--text-muted);
+        margin-bottom: 4px;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+      }
+
+      .custom-popup .info-value {
+        font-size: 14px;
+        font-weight: 600;
+        color: var(--text-primary);
+      }
+
+      .status-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        padding: 4px 8px;
+        border-radius: 12px;
+        font-size: 11px;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+      }
+
+      .status-active {
+        background: rgba(46, 204, 113, 0.2);
+        color: var(--secondary-color);
+        border: 1px solid rgba(46, 204, 113, 0.3);
+      }
+
+      .status-inactive {
+        background: rgba(231, 76, 60, 0.2);
+        color: var(--danger-color);
+        border: 1px solid rgba(231, 76, 60, 0.3);
+      }
+
+      .content-section {
+        margin: 16px 0;
+        padding: 16px;
+        background: rgba(255, 255, 255, 0.05);
+        border-radius: var(--border-radius-sm);
+        border: 1px solid var(--border-color);
+      }
+
+      .content-title {
+        font-weight: 700;
+        color: var(--accent-color);
+        margin-bottom: 8px;
+        font-size: 16px;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+      }
+
+      .content-text {
+        line-height: 1.7;
+        color: var(--text-primary);
+        margin-bottom: 8px;
+      }
+
+      .content-text strong {
+        color: var(--accent-color);
+        font-weight: 600;
+      }
+
+      .lines-section .line-item {
+        background: rgba(255, 255, 255, 0.08);
+        padding: 12px 16px;
+        border-radius: var(--border-radius-sm);
+        margin: 12px 0;
+        border-left: 3px solid var(--primary-color);
+        transition: var(--transition);
+      }
+
+      .lines-section .line-item:hover {
+        background: rgba(255, 255, 255, 0.12);
+        transform: translateX(4px);
+      }
+
+      .line-header {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        margin-bottom: 8px;
+      }
+
+      .line-position {
+        font-weight: 700;
+        color: var(--warning-color);
+        font-size: 14px;
+      }
+
+      .line-title {
+        font-size: 13px;
+        color: var(--text-secondary);
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+      }
+
+      /* Custom scrollbar for popup content */
+      .leaflet-popup-content {
+        max-height: 60vh;
+        overflow-y: auto;
+        scrollbar-width: thin;
+        scrollbar-color: var(--primary-color) transparent;
+      }
+
+      .leaflet-popup-content::-webkit-scrollbar {
+        width: 6px;
+      }
+
+      .leaflet-popup-content::-webkit-scrollbar-track {
+        background: transparent;
+      }
+
+      .leaflet-popup-content::-webkit-scrollbar-thumb {
+        background: var(--primary-color);
+        border-radius: 3px;
+      }
+
+      .leaflet-popup-content::-webkit-scrollbar-thumb:hover {
+        background: #2980b9;
+      }
+
+      /* Loading indicator */
+      .loading {
+        opacity: 0.7;
+        pointer-events: none;
+      }
+
+      /* Responsive design */
+      @media (max-width: 768px) {
+        .control-panel {
+          top: 10px;
+          left: 10px;
+          padding: 12px;
+          min-width: 180px;
+        }
+
+        .control-panel button {
+          padding: 8px 12px;
+          font-size: 13px;
+        }
+
+        .status-bar {
+          bottom: 10px;
+          padding: 8px 16px;
+          gap: 16px;
+        }
+
+        .status-item {
+          font-size: 13px;
+        }
+
+        .custom-popup .info-grid {
+          grid-template-columns: 1fr;
+          gap: 8px;
+        }
+
+        .leaflet-popup-content {
+          min-width: 280px;
+          max-width: 350px;
+        }
+      }
+
+      /* Animation for smooth transitions */
+      .leaflet-popup.custom-popup {
+        animation: popupFadeIn 0.3s ease-out;
+      }
+
+      @keyframes popupFadeIn {
+        from {
+          opacity: 0;
+          transform: scale(0.9) translateY(-10px);
+        }
+        to {
+          opacity: 1;
+          transform: scale(1) translateY(0);
+        }
+      }
+
+      /* Enhanced focus states for accessibility */
+      .control-panel button:focus,
+      .custom-popup .upload-btn:focus {
+        outline: 2px solid var(--primary-color);
+        outline-offset: 2px;
+      }
+
+      /* Custom marker icon styles */
+      .hex-dot {
+        background: var(--primary-color);
+        border: 2px solid white;
+        border-radius: 50%;
+        box-shadow: var(--shadow-light);
+      }
+
+      .custom-marker {
+        background: var(--accent-color);
+        border: 2px solid white;
+        border-radius: 50%;
+        box-shadow: var(--shadow-light);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-weight: bold;
+      }
     </style>
   </head>
   <body>
@@ -182,11 +571,11 @@
     <div class="status-bar">
       <div class="status-item">
         <i class="fas fa-map-marker-alt"></i>
-        <span>标记�?span class="status-count" id="hexagramCount">0</span></span>
+        <span>标记数: <span class="status-count" id="hexagramCount">0</span></span>
       </div>
       <div class="status-item">
         <i class="fas fa-images"></i>
-        <span>已配�?span class="status-count" id="imageCount">0</span></span>
+        <span>已配图: <span class="status-count" id="imageCount">0</span></span>
       </div>
       <div class="status-item">
         <i class="fas fa-edit"></i>

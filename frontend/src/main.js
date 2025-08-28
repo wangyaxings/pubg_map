@@ -342,6 +342,8 @@ async function initMap() {
 
     // Fit to full image bounds on load
     map.fitBounds(bounds);
+    // After fitting, nudge view to visually center (account right panel)
+    setTimeout(adjustViewForControlPanel, 0);
 
     // 创建瓦片层
     overlay = createTileLayer();
@@ -349,10 +351,18 @@ async function initMap() {
     // 添加标记模式控件
     map.addControl(createMarkerModeControl());
 
-    // 不再自动加载现有标记，改为通过用户添加
+    // 加载后端已保存的标记，刷新后仍可恢复
+    try {
+      await fetchMarkers();
+      addMarkers();
+    } catch (e) {
+      console.warn('从后端加载标记失败，尝试本地存储:', e);
+    }
 
-    // 加载保存的坐标
-    loadCoordinatesFromStorage();
+    // 加载保存的坐标（作为后端失败的补充来源）
+    if (!markers || markers.length === 0) {
+      loadCoordinatesFromStorage();
+    }
 
     // Default view is already set by fitBounds above
 
@@ -398,11 +408,30 @@ async function initMap() {
 
     console.log('地图初始化完成');
 
+    // 监听窗口尺寸变化，保持视觉居中
+    window.addEventListener('resize', adjustViewForControlPanel);
+
     // 在地图初始化完成后暴露变量到全局作用域
     exposeGlobalVariables();
   } catch (error) {
     console.error("地图初始化失败:", error);
     alert('地图初始化失败，请检查控制台');
+  }
+}
+
+// 根据右侧固定控制面板宽度微调视图，使地图视觉居中
+function adjustViewForControlPanel() {
+  try {
+    if (!map) return;
+    const panel = document.querySelector('.control-panel');
+    if (!panel) return;
+    const width = panel.offsetWidth || 0;
+    if (width > 0) {
+      // 向右平移半个面板宽度，使视觉中心居中
+      map.panBy([width / 2, 0], { animate: false });
+    }
+  } catch (e) {
+    console.warn('调整视图失败:', e);
   }
 }
 
@@ -779,6 +808,7 @@ function resetView() {
     // Fit to full image bounds for CRS.Simple (y inverted)
     const bounds = L.latLngBounds([[0, 0], [-WORLD_HEIGHT, WORLD_WIDTH]]);
     map.fitBounds(bounds);
+    setTimeout(adjustViewForControlPanel, 0);
   }
 }
 

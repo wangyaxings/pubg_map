@@ -343,3 +343,83 @@ window.addMarkerToMap = addMarkerToMap;
 window.showNotification = showNotification;
 window.debounce = debounce;
 window.locateHexagram = locateHexagram;
+
+// 初始化右侧快速搜索框
+function initQuickSearch() {
+  const input = document.getElementById('quickSearchInput');
+  const box = document.getElementById('quickSearchResults');
+  if (!input || !box) return;
+
+  async function doSearch(q) {
+    try {
+      if (!q || q.trim().length < 1) {
+        box.classList.remove('show');
+        box.innerHTML = '';
+        return;
+      }
+      let results;
+      if (window.searchHexagrams) {
+        results = await window.searchHexagrams(q.trim());
+      } else {
+        const resp = await fetch(`http://localhost:8080/api/hexagrams/search?q=${encodeURIComponent(q.trim())}`);
+        results = await resp.json();
+      }
+      renderQuickSearch(results);
+    } catch (e) {
+      console.error('快速搜索失败:', e);
+    }
+  }
+
+  function renderQuickSearch(results) {
+    const markersData = (window.getMarkersData && window.getMarkersData()) || [];
+    const countMap = {};
+    markersData.forEach(m => {
+      const num = m.number || (m.hexagram && m.hexagram.number);
+      if (num != null) countMap[num] = (countMap[num] || 0) + 1;
+    });
+
+    const top = (results || []).slice(0, 12).map(h => {
+      const count = countMap[h.number] || 0;
+      const badge = count > 0 ? `<span class="qs-badge used">x${count}</span>` : `<span class="qs-badge unused">未添加</span>`;
+      return `
+        <div class="qs-item" data-number="${h.number}">
+          <div class="qs-left">
+            <span class="qs-symbol">${h.symbol}</span>
+            <span class="qs-name">${h.name}</span>
+            <span class="qs-num">#${h.number}</span>
+          </div>
+          ${badge}
+        </div>
+      `;
+    }).join('');
+    box.innerHTML = top || '<div class="qs-item">无匹配结果</div>';
+    box.classList.add('show');
+  }
+
+  input.addEventListener('input', (e) => doSearch(e.target.value));
+  input.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') {
+      const first = box.querySelector('.qs-item');
+      if (first) {
+        const num = parseInt(first.getAttribute('data-number'), 10);
+        if (!isNaN(num)) window.locateHexagram(num);
+        box.classList.remove('show');
+      }
+    }
+    if (e.key === 'Escape') {
+      box.classList.remove('show');
+    }
+  });
+  box.addEventListener('click', (e) => {
+    const item = e.target.closest('.qs-item');
+    if (!item) return;
+    const num = parseInt(item.getAttribute('data-number'), 10);
+    if (!isNaN(num)) window.locateHexagram(num);
+    box.classList.remove('show');
+  });
+  document.addEventListener('click', (e) => {
+    if (!box.contains(e.target) && e.target !== input) box.classList.remove('show');
+  });
+}
+
+document.addEventListener('DOMContentLoaded', initQuickSearch);

@@ -1,6 +1,45 @@
 import L from 'leaflet';
 import axios from 'axios';
 
+// Inject missing styles for add-marker dialog and notifications
+(function injectUIStyles() {
+  try {
+    const css = `
+      .hexagram-search-dialog{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;padding:20px;background:rgba(0,0,0,.45);backdrop-filter:blur(4px);z-index:3000}
+      .hexagram-search-dialog .search-dialog-content{width:640px;max-width:92vw;max-height:82vh;display:flex;flex-direction:column;background:rgba(15,42,66,.98);color:rgba(236,240,241,1);border:1px solid rgba(255,255,255,.12);border-radius:8px;box-shadow:0 8px 32px rgba(0,0,0,.35);overflow:hidden}
+      .hexagram-search-dialog .search-dialog-header{display:flex;align-items:center;justify-content:space-between;padding:12px 16px;border-bottom:1px solid rgba(255,255,255,.12);background:rgba(255,255,255,.05)}
+      .hexagram-search-dialog .search-dialog-header h3{margin:0;font-size:16px;font-weight:700}
+      .hexagram-search-dialog .close-btn{appearance:none;border:1px solid rgba(255,255,255,.2);background:transparent;color:rgba(236,240,241,1);width:28px;height:28px;line-height:26px;text-align:center;border-radius:50%;cursor:pointer;transition:all .3s cubic-bezier(.4,0,.2,1)}
+      .hexagram-search-dialog .close-btn:hover{background:rgba(255,255,255,.08);border-color:#3498db}
+      .hexagram-search-dialog .search-input-container{display:grid;grid-template-columns:1fr auto;gap:10px;padding:12px 16px;border-bottom:1px solid rgba(255,255,255,.12);background:rgba(255,255,255,.03)}
+      .hexagram-search-dialog .search-input{padding:10px 12px;border-radius:4px;border:1px solid rgba(255,255,255,.2);background:rgba(255,255,255,.1);color:rgba(236,240,241,1);font-size:14px}
+      .hexagram-search-dialog .search-btn{padding:10px 14px;border-radius:4px;border:1px solid rgba(255,255,255,.2);background:#3498db;color:#fff;cursor:pointer;font-weight:600;transition:all .3s cubic-bezier(.4,0,.2,1)}
+      .hexagram-search-dialog .search-btn:hover{filter:brightness(1.05)}
+      .hexagram-search-dialog .search-results{flex:1;overflow:auto;padding:8px 0}
+      .hexagram-search-dialog .search-result-item{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 16px;cursor:pointer;transition:all .3s cubic-bezier(.4,0,.2,1);border-bottom:1px solid rgba(255,255,255,.06)}
+      .hexagram-search-dialog .search-result-item:hover{background:rgba(255,255,255,.06)}
+      .hexagram-search-dialog .hexagram-info{display:flex;align-items:center;gap:10px}
+      .hexagram-search-dialog .hexagram-symbol{font-size:18px;color:#f39c12}
+      .hexagram-search-dialog .hexagram-name{font-weight:600}
+      .hexagram-search-dialog .hexagram-number{font-size:12px;color:rgba(236,240,241,.7);background:rgba(255,255,255,.08);padding:2px 6px;border-radius:10px}
+      .hexagram-search-dialog .hexagram-actions .locate-btn{padding:6px 10px;border-radius:4px;border:1px solid rgba(255,255,255,.2);background:rgba(46,204,113,.18);color:#2ecc71;font-size:12px;cursor:pointer}
+      .hexagram-search-dialog .unused-badge{padding:4px 8px;border-radius:4px;font-size:12px;background:rgba(231,76,60,.18);color:#e74c3c;border:1px solid rgba(231,76,60,.3)}
+      .hexagram-search-dialog .error,.hexagram-search-dialog .no-results{text-align:center;padding:20px;color:rgba(236,240,241,.7)}
+      .notification{position:fixed;top:20px;right:20px;z-index:3001;padding:10px 14px;border-radius:4px;border:1px solid rgba(255,255,255,.12);background:#0f2a42;color:rgba(236,240,241,1);box-shadow:0 4px 16px rgba(0,0,0,.25);animation:popupFadeIn .2s ease-out}
+      .notification-success{border-left:3px solid #2ecc71}
+      .notification-error{border-left:3px solid #e74c3c}
+      .notification-info{border-left:3px solid #3498db}
+      @media (max-width:768px){.hexagram-search-dialog .search-dialog-content{width:94vw;max-height:86vh}}
+    `;
+    const style = document.createElement('style');
+    style.setAttribute('data-injected', 'hexagram-dialog-styles');
+    style.textContent = css;
+    document.head.appendChild(style);
+  } catch (e) {
+    console.warn('样式注入失败:', e);
+  }
+})();
+
 // =============================
 // Configuration & Global Variables (Pure Image Tiles with CRS.Simple)
 // =============================

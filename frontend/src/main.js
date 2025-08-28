@@ -7,8 +7,8 @@ import axios from 'axios';
 const WORLD_WIDTH = 1024;               // Level 2 tiles: 4x4 tiles * 256px = 1024px
 const WORLD_HEIGHT = 1024;              // Level 2 tiles: 4x4 tiles * 256px = 1024px
 const MAX_NATIVE_ZOOM = 8;              // Highest zoom level for native resolution tiles
-const TILE_SIZE = 256;                  // Tile size in pixels
-const EXTRA_ZOOM = 2;                   // Allow zooming beyond native resolution
+const TILE_SIZE = 128;                  // Tile size in pixels
+const EXTRA_ZOOM = 0;                   // Allow zooming beyond native resolution
 const MAX_ZOOM = MAX_NATIVE_ZOOM + EXTRA_ZOOM;
 const MIN_ZOOM = 2;                     // Tiles start from zoom level 2
 
@@ -34,18 +34,20 @@ let selectedHexagram = null; // 选中的卦象
 function toLatLngFromNormalized(xNorm, yNorm) {
   const xPx = xNorm * WORLD_WIDTH;
   const yPx = yNorm * WORLD_HEIGHT;
-  return L.latLng(yPx, xPx); // In CRS.Simple: lat=yPx, lng=xPx
+  // In CRS.Simple, y axis is inverted: pixelY -> lat = -pixelY
+  return L.latLng(-yPx, xPx);
 }
 
 // Convert pixel coordinates to Leaflet LatLng
 function toLatLngFromPixel(xPx, yPx) {
-  return L.latLng(yPx, xPx); // In CRS.Simple: lat=yPx, lng=xPx
+  // In CRS.Simple: lat = -pixelY, lng = pixelX
+  return L.latLng(-yPx, xPx);
 }
 
 // Convert Leaflet LatLng to normalized coordinates [0..1]
 function normalizeCoordinates(latLng) {
   const xNorm = latLng.lng / WORLD_WIDTH;
-  const yNorm = latLng.lat / WORLD_HEIGHT;
+  const yNorm = -latLng.lat / WORLD_HEIGHT; // invert back
   return { x: Math.max(0, Math.min(1, xNorm)), y: Math.max(0, Math.min(1, yNorm)) };
 }
 
@@ -189,18 +191,47 @@ function updateMarkerAppearance(hexagram) {
 // =============================
 // Map Initialization
 // =============================
+// Custom projection with explicit bounds matching our image pixels
+const PixelProjection = {
+  project: function (latlng) {
+    return L.point(latlng.lng, latlng.lat);
+  },
+  unproject: function (point) {
+    return L.latLng(point.y, point.x);
+  },
+  // Bounds in projected (latlng) space before transformation
+  // Southwest [0, -WORLD_HEIGHT], Northeast [WORLD_WIDTH, 0]
+  bounds: L.bounds([0, -WORLD_HEIGHT], [WORLD_WIDTH, 0])
+};
+
+// Custom CRS to align tile zoom levels with provided pyramid starting at MIN_ZOOM.
+// scale(zoom) = 2^(zoom - MIN_ZOOM) so at zoom=MIN_ZOOM 1 unit == 1 pixel.
+const ImageCRS = L.extend({}, L.CRS, {
+  projection: PixelProjection,
+  transformation: new L.Transformation(1, 0, -1, 0),
+  scale: function (zoom) { return Math.pow(2, zoom - MIN_ZOOM); },
+  zoom: function (scale) { return Math.log(scale) / Math.LN2 + MIN_ZOOM; },
+  infinite: false
+});
 function createTileLayer() {
   // Pure image tile layer for CRS.Simple
-  const bounds = L.latLngBounds([[0, 0], [WORLD_HEIGHT, WORLD_WIDTH]]);
+  // With CRS.Simple, Y axis is inverted, so bottom latitude is -WORLD_HEIGHT
+  const bounds = L.latLngBounds([[0, 0], [-WORLD_HEIGHT, WORLD_WIDTH]]);
 
     // Simple tile layer with TMS coordinate system
-  const tileLayerInstance = L.tileLayer('erange/{z}/{x}/{y}.png', {
+  // Fetch tiles via backend static server (proxied by Vite in dev)
+  const tileLayerInstance = L.tileLayer('/static/tiles/{z}/{x}/{y}.png', {
     tileSize: TILE_SIZE,
-    minZoom: MIN_ZOOM,
-    maxZoom: MAX_NATIVE_ZOOM,
+    // Declare the native levels available on disk to prevent over-fetching
+    minNativeZoom: MIN_ZOOM,
     maxNativeZoom: MAX_NATIVE_ZOOM,
+    // Cap the tile requests at the native max; map can still zoom further
+    // and Leaflet will upscale tiles instead of requesting higher z.
+    maxZoom: MAX_NATIVE_ZOOM,
     noWrap: true,
-    tms: true,                     // Use TMS coordinate system (Y axis flipped)
+    // XYZ scheme (top-left origin). Set to true only if your
+    // tile set is TMS (bottom-left origin).
+    tms: false,
     bounds: bounds,
     attribution: 'Erangel Map',
     errorTileUrl: 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7'
@@ -265,18 +296,19 @@ async function initMap() {
   try {
     console.log('正在初始化地图...');
 
-    // Setup bounds for CRS.Simple (pure pixel coordinates)
-    const bounds = L.latLngBounds([[0, 0], [WORLD_HEIGHT, WORLD_WIDTH]]);
+    // Setup bounds for CRS.Simple (y inverted): top-left [0,0], bottom-right [-H, W]
+    const bounds = L.latLngBounds([[0, 0], [-WORLD_HEIGHT, WORLD_WIDTH]]);
 
     // Initialize map with CRS.Simple for pure image tiles
     map = L.map("map", {
-      crs: L.CRS.Simple,          // Pure image in pixel space
+      crs: ImageCRS,              // Pure image with adjusted zoom scaling
       minZoom: MIN_ZOOM,
       maxZoom: MAX_ZOOM,
       zoomSnap: 1,
       attributionControl: false,
       zoomControl: true,
-      maxBounds: bounds.pad(0.2), // Keep users from panning too far outside
+      maxBounds: bounds,          // Strictly clamp to image bounds
+      maxBoundsViscosity: 1.0,    // Prevent panning outside bounds
     });
 
     // Fit to full image bounds on load
@@ -619,7 +651,7 @@ function addMarkers() {
         e.target.getElement().classList.remove("dragging");
 
         const newPos = e.target.getLatLng();
-        const normalizedCoords = normalizeCoordinates(newPos.lat, newPos.lng);
+        const normalizedCoords = normalizeCoordinates(newPos);
 
         // 更新数据库
         try {
@@ -703,8 +735,8 @@ function toggleAllLabels() {
 
 function resetView() {
   if (map) {
-    // Fit to full image bounds for CRS.Simple
-    const bounds = L.latLngBounds([[0, 0], [WORLD_HEIGHT, WORLD_WIDTH]]);
+    // Fit to full image bounds for CRS.Simple (y inverted)
+    const bounds = L.latLngBounds([[0, 0], [-WORLD_HEIGHT, WORLD_WIDTH]]);
     map.fitBounds(bounds);
   }
 }

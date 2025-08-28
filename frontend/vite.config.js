@@ -7,6 +7,11 @@ export default defineConfig({
       '/api': {
         target: 'http://localhost:8080',
         changeOrigin: true
+      },
+      // Proxy static tiles to backend during development
+      '/static': {
+        target: 'http://localhost:8080',
+        changeOrigin: true
       }
     }
   },

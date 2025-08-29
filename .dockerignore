@@ -1,0 +1,9 @@
+.git
+node_modules
+frontend/node_modules
+frontend/dist
+backend/static/uploads
+*.log
+.DS_Store
+Dockerfile
+docker-compose.yml

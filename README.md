@@ -1,88 +1,68 @@
 # 周易六十四卦地图标注系统
 
-这是一个前后端分离的周易六十四卦地图标注系统，使用Go作为后端，Vite + JavaScript作为前端。
+一个前后端分离的周易六十四卦地图标注系统：后端使用 Go（Gin + SQLite），前端使用 Vite + JavaScript（Leaflet）。
 
-## 项目结构
+## 目录结构
 
 ```
 zhouyi-map-project/
-├── backend/           # Go后端
-│   ├── main.go       # 主程序
-│   └── go.mod        # Go模块文件
-├── frontend/          # 前端
-│   ├── src/
-│   │   └── main.js   # 主JavaScript文件
-│   ├── index.html    # HTML文件
-│   ├── package.json  # 前端依赖
-│   └── vite.config.js # Vite配置
-└── README.md         # 项目说明
+├─ backend/                       # Go 后端
+│  ├─ main.go
+│  ├─ go.mod / go.sum
+│  └─ static/                     # 静态目录（tiles、uploads、打包后的前端）
+├─ frontend/                      # 前端（Vite）
+│  ├─ index.html
+│  ├─ vite.config.js
+│  └─ src/
+├─ data/
+│  ├─ zhouyi_map.db               # 唯一使用的 SQLite 数据库（统一路径）
+│  └─ uploads/                    # 上传图片持久化目录
+├─ docker-compose.yml
+├─ Dockerfile
+├─ start.bat
+└─ README.md
 ```
 
-## 功能特性
+## 数据库路径统一
 
-- 🗺️ 基于Leaflet的瓦片地图系统
-- 📍 64个周易卦象标记点
-- 📖 完整的周易数据展示（卦辞、彖辞、大象辞、爻辞等）
-- 🎯 拖拽调整标记点位置（相对位置保持不变）
-- 📋 按正确顺序显示爻辞（初、二、三、四、五、上）
-- 🚫 过滤掉仅包含"六"或"九"的爻辞
-- 🖼️ 支持为每个标记点上传图片
-- 💾 保存/加载坐标数据
-- 📱 响应式设计
+为保证开发与生产环境一致，统一仅使用仓库根目录下的 `data/zhouyi_map.db`。
 
-## 数据来源
+- 本地开发（backend 工作目录为 `backend/`）
+  - 默认路径：`../data/zhouyi_map.db`
+  - 可通过环境变量覆盖：`DB_PATH=绝对或相对路径`
+- Docker/Docker Compose（容器内 backend 工作目录为 `/app/backend`）
+  - 默认路径：`/app/data/zhouyi_map.db`（等价于相对的 `../data/zhouyi_map.db`）
+  - 通过环境变量覆盖：`-e DB_PATH=/app/data/zhouyi_map.db`
 
-系统使用`zhouyi.py`生成的SQLite数据库，包含：
-- 64个卦象的基本信息
-- 卦辞、彖辞、大象辞及其译文和辨证
-- 每个卦象的6个爻辞及其小象辞
-- 内外卦信息
+说明：项目中其他历史路径（如 `zhouyi.db`、`/app/zhouyi.db` 等）均已废弃，不再使用。
 
-## 地图系统
+## 运行方式
 
-使用Erangel地图瓦片系统：
-- 瓦片大小：256x256像素
-- 地图尺寸：8192x8192像素
-- 最大缩放级别：3
-- 瓦片格式：PNG
+### 一、Windows 本地快速启动
 
-## 安装和运行
-
-### 前置要求
-
-1. 确保已运行`zhouyi.py`生成`zhouyi.db`数据库文件
-2. 安装Go 1.21+
-3. 安装Node.js 16+
-
-### 快速启动（推荐）
-
-#### Windows
-```bash
-# 双击运行或命令行执行
+```bat
 start.bat
 ```
 
-#### Linux/Mac
-```bash
-# 给脚本执行权限
-chmod +x start.sh
-# 运行脚本
-./start.sh
-```
+- 后端：`http://localhost:8080`
+- 前端（开发服务器，base 为 `/static/`）：`http://localhost:3000/static/`
 
-### 手动启动
+start.bat 已设置 `DB_PATH=..\data\zhouyi_map.db`，无需手动配置。
 
-#### 后端启动
+### 二、手动启动（开发模式）
+
+1) 启动后端
 
 ```bash
 cd backend
-go mod tidy
+set DB_PATH=..\data\zhouyi_map.db  # Windows PowerShell/CMD
+# 或 export DB_PATH=../data/zhouyi_map.db  # Linux/Mac
 go run main.go
 ```
 
-后端将在 `http://localhost:8080` 启动
+访问后端：`http://localhost:8080`
 
-#### 前端启动
+2) 启动前端（Vite）
 
 ```bash
 cd frontend
@@ -90,107 +70,74 @@ yarn install
 yarn dev
 ```
 
-前端将在 `http://localhost:3000` 启动
+访问前端：`http://localhost:3000/static/`
 
-### 测试API
+说明：Vite 开发服务器通过代理将 `/api`、`/static/tiles`、`/static/uploads` 分发到后端。
 
-确保后端正在运行，然后执行：
+### 三、Docker 单容器运行
 
-```bash
-node test-api.js
-```
-
-### 测试瓦片地图
-
-确保前端正在运行，然后执行：
+1) 构建镜像
 
 ```bash
-node test-tiles.js
+docker build -t zhouyi-map:latest .
 ```
 
-## API接口
+2) 运行容器（挂载数据库与瓦片、上传目录）
 
-### 获取所有标记点
-```
-GET /api/markers
-```
-
-### 获取卦象详情
-```
-GET /api/hexagrams/{id}
-```
-
-### 获取所有卦象
-```
-GET /api/hexagrams
+```bash
+docker run -d \
+  --name zhouyi-map \
+  -p 8080:8080 \
+  -v /abs/path/zhouyi_map.db:/app/data/zhouyi_map.db \
+  -v /abs/path/tiles:/app/backend/static/tiles:ro \
+  -v /abs/path/uploads:/app/backend/static/uploads \
+  -e TZ=Asia/Shanghai \
+  zhouyi-map:latest
 ```
 
-### 上传图片
-```
-POST /api/upload-image
-```
+访问：`http://localhost:8080/`
 
-### 更新标记点
-```
-POST /api/markers
-```
+可选环境变量：
+- `DB_PATH`：后端在容器内的数据库路径，默认 `/app/data/zhouyi_map.db`。
+- `STATIC_DIR`：后端静态目录，默认 `/app/backend/static`。
 
-## 使用说明
+### 四、Docker Compose 运行（推荐）
 
-1. **上传地图图片**：点击或拖拽图片到上传区域
-2. **查看卦象信息**：点击标记点查看详细信息
-3. **编辑模式**：点击"启用拖拽"按钮进入编辑模式
-4. **保存数据**：点击"保存坐标"按钮保存当前布局
-5. **上传点图片**：在卦象详情弹窗中点击"上传"按钮
-
-## 技术栈
-
-### 后端
-- Go 1.21+
-- Gin Web框架
-- SQLite数据库
-- CORS支持
-
-### 前端
-- Vite构建工具
-- Leaflet地图库
-- Axios HTTP客户端
-- Font Awesome图标
-
-## 开发说明
-
-### 数据结构
-
-参考`zhouyi.py`中的数据结构：
-
-```go
-type Hexagram struct {
-    Number              int     `json:"number"`
-    Name                string  `json:"name"`
-    Symbol              string  `json:"symbol"`
-    GuaCi               string  `json:"gua_ci"`
-    GuaCiTranslation    string  `json:"gua_ci_translation"`
-    GuaCiCommentary     string  `json:"gua_ci_commentary"`
-    TuanCi              string  `json:"tuan_ci"`
-    TuanCiTranslation   string  `json:"tuan_ci_translation"`
-    TuanCiCommentary    string  `json:"tuan_ci_commentary"`
-    DaXiangCi           string  `json:"da_xiang_ci"`
-    DaXiangTranslation  string  `json:"da_xiang_translation"`
-    DaXiangCommentary   string  `json:"da_xiang_commentary"`
-    InnerTrigram        string  `json:"inner_trigram"`
-    OuterTrigram        string  `json:"outer_trigram"`
-    X                   float64 `json:"x"`
-    Y                   float64 `json:"y"`
-    Image               string  `json:"image,omitempty"`
-}
+```bash
+docker compose up -d --build
 ```
 
-### 自定义开发
+访问：`http://localhost:3000/`
 
-1. **添加新的API接口**：在`backend/main.go`中添加新的路由
-2. **修改前端样式**：编辑`frontend/index.html`中的CSS
-3. **扩展功能**：在`frontend/src/main.js`中添加新的JavaScript功能
+说明：Compose 将宿主机 `./data` 挂载到容器内 `/app/data`，确保 `./data/zhouyi_map.db` 存在即可。
 
-## 许可证
+## API（简要）
 
-MIT License
+- `GET /api/hexagrams`：获取所有卦象
+- `GET /api/hexagrams/{id}`：获取某一卦象详情（含爻辞）
+- `GET /api/hexagrams/search?q=...`：搜索卦象
+- `GET /api/markers`：获取用户标记
+- `POST /api/markers`：新增标记
+- `PUT /api/markers/{id}`：更新标记
+- `DELETE /api/markers/{id}`：删除标记
+- `POST /api/upload-image`：上传图片（保存到 `/static/uploads/`）
+
+## 其他说明
+
+- 底图瓦片放在 `backend/static/tiles`，生产环境由后端通过 `/static/tiles` 提供。
+- 前端构建产物在容器内会复制到 `backend/static`，后端通过 `/`（入口）和 `/static`（资源）对外提供。
+- 本地开发的 API 调用使用相对路径 `/api`，由 Vite 代理到后端，生产环境走同源。
+
+本地（Windows）：
+双击运行 start.bat，访问
+后端: http://localhost:8080
+前端（开发）: http://localhost:3000/static/
+
+Docker（单容器）：
+docker build -t zhouyi-map:latest .
+docker run -d -p 8080:8080 -v /abs/path/zhouyi_map.db:/app/data/zhouyi_map.db zhouyi-map:latest
+访问: http://localhost:8080/
+
+Docker Compose：
+docker compose up -d --build
+访问: http://localhost:3000/

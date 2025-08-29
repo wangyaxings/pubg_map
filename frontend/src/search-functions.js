@@ -46,7 +46,7 @@ async function showHexagramSearchDialog(latlng) {
 // 加载所有卦象
 async function loadAllHexagrams() {
   try {
-    const response = await fetch('http://localhost:8080/api/hexagrams');
+    const response = await fetch('/api/hexagrams');
     const hexagrams = await response.json();
     displaySearchResults(hexagrams);
   } catch (error) {
@@ -361,7 +361,7 @@ function initQuickSearch() {
       if (window.searchHexagrams) {
         results = await window.searchHexagrams(q.trim());
       } else {
-        const resp = await fetch(`http://localhost:8080/api/hexagrams/search?q=${encodeURIComponent(q.trim())}`);
+        const resp = await fetch(`/api/hexagrams/search?q=${encodeURIComponent(q.trim())}`);
         results = await resp.json();
       }
       renderQuickSearch(results);

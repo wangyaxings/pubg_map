@@ -99,7 +99,7 @@ function normalizeCoordinates(latLng) {
 // =============================
 async function fetchMarkers() {
   try {
-    const response = await axios.get('http://localhost:8080/api/markers');
+    const response = await axios.get('/api/markers');
     markersData = response.data;
     return markersData;
   } catch (error) {
@@ -110,7 +110,7 @@ async function fetchMarkers() {
 
 async function fetchHexagramDetails(hexagramId) {
   try {
-    const response = await axios.get(`http://localhost:8080/api/hexagrams/${hexagramId}`);
+    const response = await axios.get(`/api/hexagrams/${hexagramId}`);
     return response.data;
   } catch (error) {
     console.error('Failed to fetch hexagram details:', error);
@@ -120,7 +120,7 @@ async function fetchHexagramDetails(hexagramId) {
 
 async function searchHexagrams(query) {
   try {
-    const response = await axios.get(`http://localhost:8080/api/hexagrams/search?q=${encodeURIComponent(query)}`);
+    const response = await axios.get(`/api/hexagrams/search?q=${encodeURIComponent(query)}`);
     return response.data;
   } catch (error) {
     console.error('Failed to search hexagrams:', error);
@@ -130,7 +130,7 @@ async function searchHexagrams(query) {
 
 async function addMarkerToDatabase(hexagramNumber, x, y) {
   try {
-    const response = await axios.post('http://localhost:8080/api/markers', {
+    const response = await axios.post('/api/markers', {
       hexagram_number: hexagramNumber,
       x: x,
       y: y
@@ -144,7 +144,7 @@ async function addMarkerToDatabase(hexagramNumber, x, y) {
 
 async function updateMarkerInDatabase(markerId, x, y, image) {
   try {
-    const response = await axios.put(`http://localhost:8080/api/markers/${markerId}`, {
+    const response = await axios.put(`/api/markers/${markerId}`, {
       x: x,
       y: y,
       image: image
@@ -158,7 +158,7 @@ async function updateMarkerInDatabase(markerId, x, y, image) {
 
 async function deleteMarkerFromDatabase(markerId) {
   try {
-    const response = await axios.delete(`http://localhost:8080/api/markers/${markerId}`);
+    const response = await axios.delete(`/api/markers/${markerId}`);
     return response.data;
   } catch (error) {
     console.error('Failed to delete marker:', error);
@@ -172,7 +172,7 @@ async function uploadPointImage(file, hexagramId) {
     formData.append('image', file);
     formData.append('hexagramId', hexagramId);
 
-    const response = await axios.post('http://localhost:8080/api/upload-image', formData, {
+    const response = await axios.post('/api/upload-image', formData, {
       headers: {
         'Content-Type': 'multipart/form-data'
       }
@@ -842,6 +842,55 @@ function toggleDragMode() {
 }
 
 // =============================
+// Bulk Coordinate Correction
+// =============================
+function clamp01(v) { return Math.max(0, Math.min(1, v)); }
+
+async function bulkCorrectMarkers(scaleX = 2, scaleY = 2, offsetX = 0, offsetY = 0) {
+  if (!Array.isArray(markersData) || markersData.length === 0) {
+    showNotification('当前没有可校正的坐标', 'info');
+    return;
+  }
+
+  const total = markersData.length;
+  let success = 0, failed = 0;
+
+  // 顺序执行，避免并发过高
+  for (let i = 0; i < markersData.length; i++) {
+    const m = markersData[i];
+    const newX = clamp01(m.x * scaleX + offsetX);
+    const newY = clamp01(m.y * scaleY + offsetY);
+    try {
+      await updateMarkerInDatabase(m.id, newX, newY, m.image);
+      m.x = newX;
+      m.y = newY;
+      success++;
+    } catch (e) {
+      console.error('校正失败:', m, e);
+      failed++;
+    }
+  }
+
+  addMarkers();
+  updateCounts();
+
+  const msg = `坐标校正完成：成功 ${success}/${total}${failed ? `，失败 ${failed}` : ''}`;
+  showNotification(msg, failed ? 'error' : 'success');
+}
+
+function bulkCorrectMarkersPrompt() {
+  const tip = '输入校正参数，格式：scaleX,scaleY,offsetX,offsetY\n例如：2,2,0,0 表示整体放大到原来的2倍，无偏移';
+  const input = window.prompt(tip, '2,2,0,0');
+  if (!input) return;
+  const parts = input.split(',').map(s => parseFloat(s.trim()));
+  if (parts.length !== 4 || parts.some(v => Number.isNaN(v))) {
+    alert('格式错误，请按示例输入：2,2,0,0');
+    return;
+  }
+  bulkCorrectMarkers(parts[0], parts[1], parts[2], parts[3]);
+}
+
+// =============================
 // Data Persistence
 // =============================
 function saveCoordinates() {
@@ -982,6 +1031,8 @@ function exposeGlobalVariables() {
   window.loadCoordinates = loadCoordinates;
   window.resetCoordinates = resetCoordinates;
   window.toggleDragMode = toggleDragMode;
+  window.bulkCorrectMarkers = bulkCorrectMarkers;
+  window.bulkCorrectMarkersPrompt = bulkCorrectMarkersPrompt;
 
   // 暴露变量 - 这些需要在运行时动态更新
   window.getMarkersData = () => markersData;

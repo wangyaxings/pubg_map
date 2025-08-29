@@ -1,0 +1,18 @@
+version: '3.9'
+
+services:
+  app:
+    image: zhouyi-map:latest
+    container_name: zhouyi-map-app
+    ports:
+      - "3000:8080"   # 在宿主机 3000 访问，容器内仍为 8080
+    environment:
+      - TZ=Asia/Shanghai
+      - DB_PATH=/app/data/zhouyi_map.db
+      - STATIC_DIR=/app/backend/static
+    volumes:
+      - ./data:/app/data                                   # 数据库目录，需包含 zhouyi_map.db
+      - ./backend/static/tiles:/app/backend/static/tiles:ro # 瓦片目录
+      - ./data/uploads:/app/backend/static/uploads          # 上传目录
+    restart: unless-stopped
+

@@ -1,15 +1,15 @@
 package main
 
 import (
-	"database/sql"
-	"log"
-	"net/http"
-	"os"
-	"path/filepath"
+    "database/sql"
+    "log"
+    "net/http"
+    "os"
+    "path/filepath"
 
-	"github.com/gin-contrib/cors"
-	"github.com/gin-gonic/gin"
-	_ "github.com/mattn/go-sqlite3"
+    "github.com/gin-contrib/cors"
+    "github.com/gin-gonic/gin"
+    _ "github.com/mattn/go-sqlite3"
 )
 
 // Hexagram represents a hexagram with its data
@@ -74,17 +74,17 @@ type AddMarkerRequest struct {
 var db *sql.DB
 
 func main() {
-	// Initialize database
-	var err error
-	dbPath := "../../zhouyi.db"
-
-	// Check if database file exists
-	if _, err := os.Stat(dbPath); os.IsNotExist(err) {
-		log.Printf("Database file not found at: %s", dbPath)
-		log.Fatal("Database file not found. Please run zhouyi.py first to generate the database.")
-	}
-
-	log.Printf("Found database at: %s", dbPath)
+    // Initialize database
+    var err error
+    // Resolve DB path: prefer DB_PATH; otherwise use ../data/zhouyi_map.db
+    dbPath := os.Getenv("DB_PATH")
+    if dbPath == "" {
+        dbPath = filepath.Clean(filepath.Join(".", "..", "data", "zhouyi_map.db"))
+    }
+    if _, err := os.Stat(dbPath); os.IsNotExist(err) {
+        log.Fatalf("Database file not found at: %s. Set DB_PATH to override.", dbPath)
+    }
+    log.Printf("Using database at: %s", dbPath)
 
 	db, err = sql.Open("sqlite3", dbPath)
 	if err != nil {
@@ -113,9 +113,13 @@ func main() {
 	config.AllowHeaders = []string{"Origin", "Content-Type", "Accept", "Authorization"}
 	r.Use(cors.New(config))
 
-	// Serve static files
-	r.Static("/static", "./static")
-	r.StaticFile("/", "./static/index.html")
+    // Serve static files (allow override via STATIC_DIR)
+    staticRoot := os.Getenv("STATIC_DIR")
+    if staticRoot == "" {
+        staticRoot = "./static"
+    }
+    r.Static("/static", staticRoot)
+    r.StaticFile("/", filepath.Join(staticRoot, "index.html"))
 
 	// API routes
 	api := r.Group("/api")
@@ -130,10 +134,10 @@ func main() {
 		api.POST("/upload-image", uploadImage)
 	}
 
-	// Create static directory if it doesn't exist
-	if err := os.MkdirAll("./static", 0755); err != nil {
-		log.Fatal(err)
-	}
+    // Create static directory if it doesn't exist
+    if err := os.MkdirAll(staticRoot, 0755); err != nil {
+        log.Fatal(err)
+    }
 
 	log.Println("Server starting on :8080")
 	r.Run(":8080")

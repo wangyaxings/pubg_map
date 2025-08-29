@@ -343,7 +343,7 @@ async function initMap() {
 
       // 根据缩放级别调整标记显示
       markers.forEach(marker => {
-        // 对于 CircleMarker，使用 setRadius 调整大小，避免对 SVG path 应用 CSS transform 导致位置错乱或不可见
+        // 对于 CircleMarker，使用 setRadius 调整大小
         if (marker instanceof L.CircleMarker) {
           const base = 5; // 初始半径
           let r = base;
@@ -353,19 +353,9 @@ async function initMap() {
             r = base * 1.2;
           }
           marker.setRadius(r);
-        } else {
-          // 仅对使用 DivIcon 的 L.Marker 应用 transform
-          const element = marker.getElement();
-          if (element) {
-            if (currentZoom < 3) {
-              element.style.transform = 'translate(-50%, -50%) scale(0.8)';
-            } else if (currentZoom > 6) {
-              element.style.transform = 'translate(-50%, -50%) scale(1.2)';
-            } else {
-              element.style.transform = 'translate(-50%, -50%) scale(1)';
-            }
-          }
         }
+        // 注意：移除了对 L.Marker 的 transform 覆盖，避免与 Leaflet 内联 transform 冲突
+        // 如果需要缩放时调整 Marker 大小，建议通过 CSS 变量或调整 DivIcon 内部元素实现
       });
     });
 
@@ -625,13 +615,9 @@ function addMarkers() {
       // Convert normalized coordinates to pixel coordinates for CRS.Simple
       const position = toLatLngFromNormalized(markerData.x, markerData.y);
 
-      // Use circleMarker for pixel-accurate positioning in CRS.Simple
-      const marker = L.circleMarker(position, {
-        radius: 5,          // Dot radius in pixels
-        weight: 0,          // No stroke
-        fill: true,
-        fillOpacity: 1,
-        fillColor: '#e11d48', // Rose-600
+      // Use L.Marker with DivIcon for draggable positioning
+      const marker = L.marker(position, {
+        icon: dotIcon(),
         draggable: dragMode,
         hexagram: markerData,
         zIndexOffset: 1000,

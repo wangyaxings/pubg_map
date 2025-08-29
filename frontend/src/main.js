@@ -282,47 +282,7 @@ function createTileLayer() {
   return tileLayerInstance;
 }
 
-// 添加自定义标记模式控件（参考index.js）
-function createMarkerModeControl() {
-  const MarkerModeControl = L.Control.extend({
-    options: {
-      position: 'topleft'
-    },
 
-    onAdd: function (map) {
-      const container = L.DomUtil.create('div', 'leaflet-bar leaflet-control leaflet-control-custom');
-
-      const button = L.DomUtil.create('button', '', container);
-      button.innerHTML = 'M';
-      button.title = '开启添加标记模式';
-      button.style.cssText = `
-        width: 30px;
-        height: 30px;
-        background: white;
-        border: 2px solid rgba(0,0,0,0.2);
-        border-radius: 4px;
-        cursor: pointer;
-        font-weight: bold;
-        color: #333;
-      `;
-
-      button.onclick = function (e) {
-        isMarkerMode = !isMarkerMode;
-        console.log('Marker mode:', isMarkerMode);
-        button.innerHTML = isMarkerMode ? 'X' : 'M';
-        button.title = isMarkerMode ? '关闭添加标记模式' : '开启添加标记模式';
-        button.style.background = isMarkerMode ? '#ff6b6b' : 'white';
-        button.style.color = isMarkerMode ? 'white' : '#333';
-        L.DomEvent.stopPropagation(e);
-      };
-
-      L.DomEvent.disableClickPropagation(container);
-      return container;
-    }
-  });
-
-  return new MarkerModeControl();
-}
 
 async function initMap() {
   try {
@@ -338,7 +298,7 @@ async function initMap() {
       maxZoom: MAX_ZOOM,
       zoomSnap: 1,
       attributionControl: false,
-      zoomControl: true,
+      zoomControl: false,
       // Always zoom towards the viewport center (wheel/pinch)
       scrollWheelZoom: 'center',
       touchZoom: 'center',
@@ -352,8 +312,7 @@ async function initMap() {
     // 创建瓦片层
     overlay = createTileLayer();
 
-    // 添加标记模式控件
-    map.addControl(createMarkerModeControl());
+
 
     // 加载后端已保存的标记，刷新后仍可恢复
     try {
@@ -841,54 +800,28 @@ function toggleDragMode() {
   });
 }
 
-// =============================
-// Bulk Coordinate Correction
-// =============================
-function clamp01(v) { return Math.max(0, Math.min(1, v)); }
+function toggleMarkerMode() {
+  isMarkerMode = !isMarkerMode;
+  const markerModeBtn = document.getElementById("markerModeBtn");
+  const markerModeText = document.getElementById("markerModeText");
+  const markerModeIcon = document.getElementById("markerModeIcon");
 
-async function bulkCorrectMarkers(scaleX = 2, scaleY = 2, offsetX = 0, offsetY = 0) {
-  if (!Array.isArray(markersData) || markersData.length === 0) {
-    showNotification('当前没有可校正的坐标', 'info');
-    return;
+  if (isMarkerMode) {
+    markerModeText.textContent = "关闭标记模式";
+    markerModeIcon.className = "fas fa-times";
+    markerModeBtn.style.background = "rgba(231, 76, 60, 0.2)";
+    markerModeBtn.style.borderColor = "#e74c3c";
+    showNotification("标记模式已开启，点击地图添加标记", 'info');
+  } else {
+    markerModeText.textContent = "开启标记模式";
+    markerModeIcon.className = "fas fa-map-marker-alt";
+    markerModeBtn.style.background = "rgba(255, 255, 255, 0.1)";
+    markerModeBtn.style.borderColor = "rgba(255, 255, 255, 0.2)";
+    showNotification("标记模式已关闭", 'info');
   }
-
-  const total = markersData.length;
-  let success = 0, failed = 0;
-
-  // 顺序执行，避免并发过高
-  for (let i = 0; i < markersData.length; i++) {
-    const m = markersData[i];
-    const newX = clamp01(m.x * scaleX + offsetX);
-    const newY = clamp01(m.y * scaleY + offsetY);
-    try {
-      await updateMarkerInDatabase(m.id, newX, newY, m.image);
-      m.x = newX;
-      m.y = newY;
-      success++;
-    } catch (e) {
-      console.error('校正失败:', m, e);
-      failed++;
-    }
-  }
-
-  addMarkers();
-  updateCounts();
-
-  const msg = `坐标校正完成：成功 ${success}/${total}${failed ? `，失败 ${failed}` : ''}`;
-  showNotification(msg, failed ? 'error' : 'success');
 }
 
-function bulkCorrectMarkersPrompt() {
-  const tip = '输入校正参数，格式：scaleX,scaleY,offsetX,offsetY\n例如：2,2,0,0 表示整体放大到原来的2倍，无偏移';
-  const input = window.prompt(tip, '2,2,0,0');
-  if (!input) return;
-  const parts = input.split(',').map(s => parseFloat(s.trim()));
-  if (parts.length !== 4 || parts.some(v => Number.isNaN(v))) {
-    alert('格式错误，请按示例输入：2,2,0,0');
-    return;
-  }
-  bulkCorrectMarkers(parts[0], parts[1], parts[2], parts[3]);
-}
+
 
 // =============================
 // Data Persistence
@@ -1031,8 +964,7 @@ function exposeGlobalVariables() {
   window.loadCoordinates = loadCoordinates;
   window.resetCoordinates = resetCoordinates;
   window.toggleDragMode = toggleDragMode;
-  window.bulkCorrectMarkers = bulkCorrectMarkers;
-  window.bulkCorrectMarkersPrompt = bulkCorrectMarkersPrompt;
+  window.toggleMarkerMode = toggleMarkerMode;
 
   // 暴露变量 - 这些需要在运行时动态更新
   window.getMarkersData = () => markersData;

@@ -583,7 +583,7 @@
 
     <div class="control-panel">
       <div class="quick-search">
-        <input id="quickSearchInput" type="text" placeholder="搜索卦名/符号/编号并定�?.." />
+        <input id="quickSearchInput" type="text" placeholder="搜索卦名/符号/编号并定位..." />
         <div id="quickSearchResults" class="quick-search-results"></div>
       </div>
       <button onclick="toggleAllLabels()">
@@ -610,20 +610,20 @@
         <i class="fas fa-arrows-alt" id="dragIcon"></i>
         <span id="dragModeText">启用拖拽</span>
       </button>
-      <button onclick="bulkCorrectMarkersPrompt()" title="根据规律批量校正坐标">
-        <i class="fas fa-ruler-combined"></i>
-        坐标校正
+      <button onclick="toggleMarkerMode()" id="markerModeBtn">
+        <i class="fas fa-map-marker-alt" id="markerModeIcon"></i>
+        <span id="markerModeText">开启标记模式</span>
       </button>
     </div>
 
     <div class="status-bar">
       <div class="status-item">
         <i class="fas fa-map-marker-alt"></i>
-        <span>标记�? <span class="status-count" id="hexagramCount">0</span></span>
+        <span>标记数 <span class="status-count" id="hexagramCount">0</span></span>
       </div>
       <div class="status-item">
         <i class="fas fa-images"></i>
-        <span>已配�? <span class="status-count" id="imageCount">0</span></span>
+        <span>已配置 <span class="status-count" id="imageCount">0</span></span>
       </div>
       <div class="status-item">
         <i class="fas fa-edit"></i>

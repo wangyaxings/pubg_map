@@ -401,10 +401,12 @@ function addCustomMarker(latlng) {
 
   // 添加右键删除功能
   marker.on('contextmenu', function () {
-    const isConfirmed = confirm('确定要删除这个标记吗？');
-    if (isConfirmed) {
+    // 使用弹窗替代浏览器确认
+    showDeleteConfirmPopup(marker, '这个标记', () => {
       map.removeLayer(marker);
-    }
+    }, () => {
+      marker.closePopup();
+    });
   });
 
   // 添加拖拽结束事件
@@ -426,6 +428,65 @@ function dotIcon() {
     iconAnchor: [8, 8],
     popupAnchor: [0, -12],
   });
+}
+
+// 使用 Leaflet 弹窗显示删除确认
+function showDeleteConfirmPopup(marker, displayName, onConfirm, onCancel) {
+  const uid = Math.random().toString(36).slice(2, 8);
+  const confirmBtnId = `confirmDelete-${uid}`;
+  const cancelBtnId = `cancelDelete-${uid}`;
+  const nameSpanId = `deleteName-${uid}`;
+
+  const content = `
+    <div class="popup-header">
+      <div class="popup-title">删除标记</div>
+      <div class="popup-subtitle">确认操作</div>
+    </div>
+    <div class="popup-body">
+      <div>确定要删除 <span id="${nameSpanId}">${displayName}</span> 吗？</div>
+      <div class="popup-actions">
+        <button id="${confirmBtnId}" class="popup-btn confirm"><i class="fas fa-trash-alt"></i> 删除</button>
+        <button id="${cancelBtnId}" class="popup-btn cancel"><i class="fas fa-times"></i> 取消</button>
+      </div>
+    </div>`;
+
+  if (!marker.getPopup()) {
+    marker.bindPopup("", { className: "custom-popup", closeButton: true, autoClose: false, keepInView: true });
+  }
+
+  marker.setPopupContent(content);
+  marker.openPopup();
+
+  // 使用 setTimeout 确保 DOM 元素已经渲染
+  setTimeout(() => {
+    const nameSpan = document.getElementById(nameSpanId);
+    const confirmBtn = document.getElementById(confirmBtnId);
+    const cancelBtn = document.getElementById(cancelBtnId);
+
+         if (confirmBtn) {
+       confirmBtn.addEventListener('click', async (ev) => {
+         ev.preventDefault();
+         ev.stopPropagation();
+         try {
+           await onConfirm?.();
+           marker.closePopup();
+         } catch (err) {
+           console.error('删除动作执行失败:', err);
+         }
+       });
+     }
+
+         if (cancelBtn) {
+       cancelBtn.addEventListener('click', (ev) => {
+         ev.preventDefault();
+         ev.stopPropagation();
+         marker.closePopup();
+         if (onCancel) {
+           onCancel();
+         }
+       });
+     }
+  }, 100);
 }
 
 // Function to sort lines by position
@@ -692,21 +753,29 @@ function addMarkers() {
       // 右键删除事件
       marker.on("contextmenu", async (e) => {
         e.originalEvent.preventDefault();
-        const isConfirmed = confirm(`确定要删除 ${markerData.name} 吗？`);
-        if (isConfirmed) {
-          try {
-            await deleteMarkerFromDatabase(markerData.id);
-            map.removeLayer(marker);
-            const index = markers.indexOf(marker);
-            if (index > -1) {
-              markers.splice(index, 1);
+        // 使用弹窗替代浏览器确认
+        showDeleteConfirmPopup(
+          marker,
+          markerData.name,
+          async () => {
+            try {
+              await deleteMarkerFromDatabase(markerData.id);
+              map.removeLayer(marker);
+              const index = markers.indexOf(marker);
+              if (index > -1) {
+                markers.splice(index, 1);
+              }
+              showNotification(`已删除 ${markerData.name}`, 'success');
+            } catch (error) {
+              console.error('删除标记失败:', error);
+              showNotification('删除标记失败', 'error');
             }
-            showNotification(`已删除 ${markerData.name}`, 'success');
-          } catch (error) {
-            console.error('删除标记失败:', error);
-            showNotification('删除标记失败', 'error');
+          },
+          () => {
+            createPopupContent(markerData, marker);
+            marker.openPopup();
           }
-        }
+        );
       });
 
       markers.push(marker);

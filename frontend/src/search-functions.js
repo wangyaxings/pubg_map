@@ -270,6 +270,10 @@ function addMarkerToMap(markerData) {
     // 右键删除事件
   marker.on("contextmenu", async (e) => {
     e.originalEvent.preventDefault();
+    // 使用弹窗替代浏览器确认
+    showDeleteConfirmPopup(marker, markerData);
+    return;
+    e.originalEvent.preventDefault();
     const isConfirmed = confirm(`确定要删除 ${markerData.name} 吗？`);
     if (isConfirmed) {
       try {
@@ -316,6 +320,80 @@ function showNotification(message, type = 'info') {
   setTimeout(() => {
     notification.remove();
   }, 3000);
+}
+
+// 使用 Leaflet 弹窗的删除确认（替代浏览器 confirm）
+function showDeleteConfirmPopup(marker, markerData) {
+  const confirmBtnId = `confirmDelete-${markerData.id}`;
+  const cancelBtnId = `cancelDelete-${markerData.id}`;
+  const nameSpanId = `deleteName-${markerData.id}`;
+
+  const content = `
+    <div class="popup-header">
+      <div class="popup-title">删除标记</div>
+      <div class="popup-subtitle">确认操作</div>
+    </div>
+    <div class="popup-body">
+      <div>确定要删除 <span id="${nameSpanId}"></span> 吗？</div>
+      <div class="popup-actions">
+        <button id="${confirmBtnId}" class="popup-btn confirm"><i class="fas fa-trash-alt"></i> 删除</button>
+        <button id="${cancelBtnId}" class="popup-btn cancel"><i class="fas fa-times"></i> 取消</button>
+      </div>
+    </div>`;
+
+  try {
+    marker.setPopupContent(content);
+    marker.openPopup();
+
+    marker.once('popupopen', () => {
+      const nameSpan = document.getElementById(nameSpanId);
+      if (nameSpan) nameSpan.textContent = `${markerData.name}`;
+
+      const confirmBtn = document.getElementById(confirmBtnId);
+      const cancelBtn = document.getElementById(cancelBtnId);
+
+      if (confirmBtn) {
+        confirmBtn.addEventListener('click', async (ev) => {
+          ev.preventDefault();
+          try {
+            await window.deleteMarkerFromDatabase(markerData.id);
+            window.getMap().removeLayer(marker);
+
+            const markersData = window.getMarkersData();
+            const dataIndex = markersData.findIndex(m => m.id === markerData.id);
+            if (dataIndex > -1) {
+              markersData.splice(dataIndex, 1);
+              window.setMarkersData(markersData);
+            }
+
+            const markers = window.getMarkers();
+            const markerIndex = markers.indexOf(marker);
+            if (markerIndex > -1) {
+              markers.splice(markerIndex, 1);
+            }
+
+            showNotification(`已删除 ${markerData.name}`, 'success');
+            window.updateCounts();
+          } catch (error) {
+            console.error('删除标记失败:', error);
+            showNotification('删除标记失败', 'error');
+          }
+        });
+      }
+
+      if (cancelBtn) {
+        cancelBtn.addEventListener('click', (ev) => {
+          ev.preventDefault();
+          if (marker && marker.isPopupOpen()) {
+            window.createPopupContent(markerData, marker);
+            marker.openPopup();
+          }
+        });
+      }
+    });
+  } catch (err) {
+    console.error('显示删除确认弹窗失败:', err);
+  }
 }
 
 // 防抖函数

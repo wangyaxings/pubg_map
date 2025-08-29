@@ -37,10 +37,17 @@
         --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
       }
 
+      /* Global box-sizing */
+      *, *::before, *::after {
+        box-sizing: border-box;
+      }
+
       /* Base styles */
       html, body {
-        height: 100%;
+        height: 100vh;
+        width: 100vw;
         margin: 0;
+        padding: 0;
         font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, 'Noto Sans', sans-serif;
         background: var(--dark-bg);
         color: var(--text-primary);
@@ -48,10 +55,13 @@
       }
 
       #map {
-        height: 100%;
-        width: 100%;
+        height: 100vh;
+        width: 100vw;
         background: var(--dark-bg);
-        position: relative;
+        position: fixed;
+        top: 0;
+        left: 0;
+        z-index: 1;
       }
 
       /* Control Panel - Enhanced with better styling */
@@ -573,7 +583,7 @@
 
     <div class="control-panel">
       <div class="quick-search">
-        <input id="quickSearchInput" type="text" placeholder="搜索卦名/符号/编号并定�?.." />
+        <input id="quickSearchInput" type="text" placeholder="搜索卦名/符号/编号并定�?.." />
         <div id="quickSearchResults" class="quick-search-results"></div>
       </div>
       <button onclick="toggleAllLabels()">
@@ -605,11 +615,11 @@
     <div class="status-bar">
       <div class="status-item">
         <i class="fas fa-map-marker-alt"></i>
-        <span>标记�? <span class="status-count" id="hexagramCount">0</span></span>
+        <span>标记�? <span class="status-count" id="hexagramCount">0</span></span>
       </div>
       <div class="status-item">
         <i class="fas fa-images"></i>
-        <span>已配�? <span class="status-count" id="imageCount">0</span></span>
+        <span>已配�? <span class="status-count" id="imageCount">0</span></span>
       </div>
       <div class="status-item">
         <i class="fas fa-edit"></i>

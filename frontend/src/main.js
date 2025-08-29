@@ -43,10 +43,13 @@ import axios from 'axios';
 // =============================
 // Configuration & Global Variables (Pure Image Tiles with CRS.Simple)
 // =============================
-const WORLD_WIDTH = 1024;               // Level 2 tiles: 4x4 tiles * 256px = 1024px
-const WORLD_HEIGHT = 1024;              // Level 2 tiles: 4x4 tiles * 256px = 1024px
+// Base world size must match the actual tile pyramid at MIN_ZOOM.
+// At z=2 we have a 4x4 grid of 128px tiles => 512px x 512px.
 const MAX_NATIVE_ZOOM = 8;              // Highest zoom level for native resolution tiles
 const TILE_SIZE = 128;                  // Tile size in pixels
+// World size at MIN_ZOOM (number of tiles per axis is 2^MIN_ZOOM)
+const WORLD_WIDTH = TILE_SIZE * Math.pow(2, 2);    // 128 * 4 = 512
+const WORLD_HEIGHT = TILE_SIZE * Math.pow(2, 2);   // 128 * 4 = 512
 const EXTRA_ZOOM = 0;                   // Allow zooming beyond native resolution
 const MAX_ZOOM = MAX_NATIVE_ZOOM + EXTRA_ZOOM;
 const MIN_ZOOM = 2;                     // Tiles start from zoom level 2
@@ -336,14 +339,15 @@ async function initMap() {
       zoomSnap: 1,
       attributionControl: false,
       zoomControl: true,
+      // Always zoom towards the viewport center (wheel/pinch)
+      scrollWheelZoom: 'center',
+      touchZoom: 'center',
       maxBounds: bounds,          // Strictly clamp to image bounds
       maxBoundsViscosity: 1.0,    // Prevent panning outside bounds
     });
 
-    // Fit to full image bounds on load
+    // Fit to full image bounds on load (true geometric center)
     map.fitBounds(bounds);
-    // After fitting, nudge view to visually center (account right panel)
-    setTimeout(adjustViewForControlPanel, 0);
 
     // 创建瓦片层
     overlay = createTileLayer();
@@ -408,8 +412,7 @@ async function initMap() {
 
     console.log('地图初始化完成');
 
-    // 监听窗口尺寸变化，保持视觉居中
-    window.addEventListener('resize', adjustViewForControlPanel);
+    // 如需根据右侧面板做视觉偏移，可恢复 adjustViewForControlPanel 监听
 
     // 在地图初始化完成后暴露变量到全局作用域
     exposeGlobalVariables();
@@ -808,7 +811,6 @@ function resetView() {
     // Fit to full image bounds for CRS.Simple (y inverted)
     const bounds = L.latLngBounds([[0, 0], [-WORLD_HEIGHT, WORLD_WIDTH]]);
     map.fitBounds(bounds);
-    setTimeout(adjustViewForControlPanel, 0);
   }
 }
 
